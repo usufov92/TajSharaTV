@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+{% load custom_filters %}
+{% block title %}История баланса{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Заголовок -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-clock-history"></i>
+                📊 История баланса
+            </h2>
+            <p class="text-muted mb-0">
+                Текущий баланс: <strong class="text-success">${{ profile.balance|floatformat:2 }}</strong>
+            </p>
+        </div>
+        <div>
+            <a href="{% url 'topup_balance' %}" class="btn btn-success me-2">
+                ➕ Пополнить баланс
+            </a>
+            <a href="{% url 'client_manager_profile' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Назад
+            </a>
+        </div>
+    </div>
+
+    <!-- Сообщения -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row">
+        <!-- Статистика -->
+        <div class="col-lg-12 mb-4">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card shadow-sm border-success">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted mb-2">Текущий баланс</h6>
+                            <h3 class="text-success mb-0">${{ profile.balance|floatformat:2 }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card shadow-sm border-primary">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted mb-2">Всего пополнено</h6>
+                            <h3 class="text-primary mb-0">${{ total_topups|floatformat:2 }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card shadow-sm border-warning">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted mb-2">Всего потрачено</h6>
+                            <h3 class="text-warning mb-0">${{ total_purchases|floatformat:2 }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card shadow-sm border-info">
+                        <div class="card-body text-center">
+                            <h6 class="text-muted mb-2">Всего операций</h6>
+                            <h3 class="text-info mb-0">{{ transactions.count }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Таблица транзакций -->
+        <div class="col-lg-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-list-ul"></i>
+                        Все операции
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if transactions %}
+                        <div class="table-responsive">
+                            <table class="table table-hover table-striped mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Дата и время</th>
+                                        <th>Тип операции</th>
+                                        <th>Клиент</th>
+                                        <th>Описание</th>
+                                        <th class="text-end">Сумма</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for transaction in transactions %}
+                                        <tr>
+                                            <td>
+                                                <small>
+                                                    {{ transaction.created_at|date:"d.m.Y" }}<br>
+                                                    <span class="text-muted">{{ transaction.created_at|time:"H:i" }}</span>
+                                                </small>
+                                            </td>
+                                            <td>
+                                                {% if transaction.client %}
+                                                    <span class="badge bg-warning text-dark">
+                                                        💳 Покупка
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge bg-success">
+                                                        💰 Пополнение
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if transaction.client %}
+                                                    <strong>{{ transaction.client.username }}</strong><br>
+                                                    <small class="text-muted">{{ transaction.client.phone|default:"Нет телефона" }}</small>
+                                                {% else %}
+                                                    <span class="text-muted">—</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <strong>{{ transaction.packages }}</strong>
+                                                {% if transaction.days_purchased > 0 %}
+                                                    <br><small class="text-muted">На {{ transaction.days_purchased }} дней</small>
+                                                {% endif %}
+                                                {% if transaction.comment %}
+                                                    <br><small class="text-info">{{ transaction.comment }}</small>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-end">
+                                                {% if transaction.client %}
+                                                    <span class="text-danger fw-bold">-${{ transaction.total_cost|floatformat:2 }}</span>
+                                                {% else %}
+                                                    <span class="text-success fw-bold">+${{ transaction.total_cost|abs_value|floatformat:2 }}</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="p-5 text-center text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                            <p class="mb-0">У вас пока нет операций с балансом</p>
+                            <a href="{% url 'topup_balance' %}" class="btn btn-success mt-3">
+                                ➕ Пополнить баланс
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Фильтры по типу операций -->
+        {% if transactions %}
+        <div class="col-lg-12 mt-4">
+            <div class="row">
+                <!-- Пополнения -->
+                <div class="col-md-6">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">💰 Пополнения ({{ topups.count }})</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            {% if topups %}
+                                <div class="table-responsive">
+                                    <table class="table table-sm mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Дата</th>
+                                                <th>Описание</th>
+                                                <th class="text-end">Сумма</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for topup in topups %}
+                                                <tr>
+                                                    <td>
+                                                        <small>{{ topup.created_at|date:"d.m.Y H:i" }}</small>
+                                                    </td>
+                                                    <td>
+                                                        <small>{{ topup.packages }}</small>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <span class="text-success fw-bold">
+                                                            +${{ topup.total_cost|abs_value|floatformat:2 }}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <p class="p-3 text-center text-muted mb-0">
+                                    Нет пополнений
+                                </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Покупки -->
+                <div class="col-md-6">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="mb-0">💳 Покупки ({{ purchases.count }})</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            {% if purchases %}
+                                <div class="table-responsive">
+                                    <table class="table table-sm mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Дата</th>
+                                                <th>Клиент</th>
+                                                <th>Пакеты</th>
+                                                <th class="text-end">Сумма</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for purchase in purchases %}
+                                                <tr>
+                                                    <td>
+                                                        <small>{{ purchase.created_at|date:"d.m.Y" }}</small>
+                                                    </td>
+                                                    <td>
+                                                        <small>{{ purchase.client.username }}</small>
+                                                    </td>
+                                                    <td>
+                                                        <small>{{ purchase.packages }}</small>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <span class="text-danger fw-bold">
+                                                            -${{ purchase.total_cost|floatformat:2 }}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <p class="p-3 text-center text-muted mb-0">
+                                    Нет покупок
+                                </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 10px;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 123, 255, 0.05);
+    }
+    
+    .border-success {
+        border-left: 4px solid #28a745 !important;
+    }
+    
+    .border-primary {
+        border-left: 4px solid #007bff !important;
+    }
+    
+    .border-warning {
+        border-left: 4px solid #ffc107 !important;
+    }
+    
+    .border-info {
+        border-left: 4px solid #17a2b8 !important;
+    }
+</style>
+{% endblock %}

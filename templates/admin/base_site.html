@@ -1,0 +1,128 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | TajSharaTV Admin{% endblock %}
+
+{% block branding %}
+<div class="admin-branding">
+    <h1 id="site-name">
+        <a href="{% url 'admin:index' %}">
+            <i class="fas fa-tv"></i>
+            TajSharaTV
+        </a>
+    </h1>
+    <button id="themeToggle" class="theme-toggle" title="Переключить тему">
+        <i class="fas fa-moon"></i>
+    </button>
+</div>
+{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="{% static 'css/admin-enhanced.css' %}">
+<script>
+// Theme Toggle Script
+document.addEventListener('DOMContentLoaded', function() {
+    const themeToggle = document.getElementById('themeToggle');
+    const html = document.documentElement;
+
+    const savedTheme = localStorage.getItem('adminTheme') || 'light';
+    html.setAttribute('data-theme', savedTheme);
+    updateThemeIcon(savedTheme);
+
+    if (themeToggle) {
+        themeToggle.addEventListener('click', function() {
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('adminTheme', newTheme);
+            updateThemeIcon(newTheme);
+        });
+    }
+
+    function updateThemeIcon(theme) {
+        const icon = themeToggle.querySelector('i');
+        icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+    }
+
+    document.querySelectorAll('a[href*="delete"]').forEach(link => {
+        link.addEventListener('click', function(e) {
+            if (!confirm('Вы уверены, что хотите удалить этот элемент?')) {
+                e.preventDefault();
+            }
+        });
+    });
+
+    document.querySelectorAll('#result_list tbody tr').forEach(row => {
+        row.style.cursor = 'pointer';
+        const links = row.querySelectorAll('a');
+        if (links.length > 0) {
+            row.addEventListener('click', function(e) {
+                if (e.target.tagName !== 'A' && e.target.tagName !== 'INPUT') {
+                    links[0].click();
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}
+
+{% block extrahead %}
+<style>
+.admin-branding {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1rem;
+}
+
+.theme-toggle {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.25rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.theme-toggle:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.1);
+}
+
+#site-name a {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: white;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1.5rem;
+}
+
+#site-name a i {
+    font-size: 1.75rem;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.module, .results, .object-tools, form {
+    animation: fadeIn 0.5s ease-out;
+}
+</style>
+{% endblock %}
+
+{% block footer %}
+<div id="footer" style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%); color: white; padding: 1.5rem; text-align: center; margin-top: 3rem; border-radius: 12px 12px 0 0; box-shadow: 0 -4px 12px rgba(0,0,0,0.1);">
+    <p style="margin: 0; font-weight: 600;">
+        <i class="fas fa-tv"></i> TajSharaTV Admin Panel | {% now "Y" %} | Сделано с <i class="fas fa-heart" style="color: #ff6b9d;"></i>
+    </p>
+</div>
+{% endblock %}

@@ -1,0 +1,563 @@
+{% extends "base.html" %}
+{% block title %}Пополнить баланс{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Заголовок -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-1" style="color: #e0e0e0;">
+                        💰 Пополнение баланса
+                    </h2>
+                    <p class="text-muted mb-0">
+                        Текущий баланс: <strong style="color: #5bc0be;">${{ current_balance|floatformat:2 }}</strong>
+                    </p>
+                </div>
+                <a href="{% url 'client_manager_profile' %}" class="btn btn-outline-secondary">
+                    ← Назад
+                </a>
+            </div>
+
+            <!-- Курс валюты -->
+            <div class="card mb-4 exchange-rate-card">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6 text-center border-end">
+                            <div class="exchange-icon">💱</div>
+                            <h4 class="mb-0">Курс валюты</h4>
+                            <p class="text-muted small mb-0">Актуальный курс в реальном времени</p>
+                        </div>
+                        <div class="col-md-6 text-center">
+                            <div class="rate-display">
+                                <span class="currency-from">1 USD</span>
+                                <span class="rate-arrow">→</span>
+                                <span class="currency-to">{{ exchange_rate|floatformat:4 }} TJS</span>
+                            </div>
+                            <small class="text-muted d-block mt-2">
+                                🕐 Обновлено: {{ now|date:"d.m.Y H:i" }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Информация о платежных реквизитах -->
+            {% if payment_methods %}
+            <div class="card mb-4 payment-info-card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        💳 Реквизиты для пополнения
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="payment-details">
+                        {% for method in payment_methods %}
+                        <div class="detail-item single-line">
+                            <div class="detail-group">
+                                <span class="detail-label">Банк:</span>
+                                <span class="detail-value">{% if method.bank_name %}{{ method.bank_name }}{% else %}—{% endif %}</span>
+                            </div>
+                            <div class="detail-group">
+                                <span class="detail-label">Владелец карты:</span>
+                                <span class="detail-value">{% if method.card_holder %}{{ method.card_holder }}{% else %}—{% endif %}</span>
+                            </div>
+                            <div class="detail-group">
+                                <span class="detail-label">Номер карты:</span>
+                                <span class="detail-value card-number" onclick="copyToClipboard('{{ method.card_number }}')">{{ method.card_number }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% elif payment_settings %}
+            <div class="card mb-4 payment-info-card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        💳 Реквизиты для пополнения
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="payment-details">
+                        <div class="detail-item single-line">
+                            <div class="detail-group">
+                                <span class="detail-label">Банк:</span>
+                                <span class="detail-value">{% if payment_settings.bank_name %}{{ payment_settings.bank_name }}{% else %}—{% endif %}</span>
+                            </div>
+                            <div class="detail-group">
+                                <span class="detail-label">Владелец карты:</span>
+                                <span class="detail-value">{% if payment_settings.card_holder %}{{ payment_settings.card_holder }}{% else %}—{% endif %}</span>
+                            </div>
+                            <div class="detail-group">
+                                <span class="detail-label">Номер карты:</span>
+                                <span class="detail-value card-number" onclick="copyToClipboard('{{ payment_settings.card_number }}')">{{ payment_settings.card_number }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-warning">
+                ⚠️ Реквизиты для пополнения не настроены. Обратитесь к администратору.
+            </div>
+            {% endif %}
+
+            <!-- Форма создания заявки -->
+            <div class="card mb-4 request-form-card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        📝 Создать заявку на пополнение
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <!-- Инструкции -->
+                        <div class="alert alert-primary mb-4">
+                            <h6 class="alert-heading">📋 Инструкция:</h6>
+                            <ol class="mb-0 ps-3">
+                                <li>Переведите нужную сумму в TJS на указанную карту</li>
+                                <li>Укажите сумму перевода в форме ниже</li>
+                                <li>Добавьте подтверждение (номер транзакции )</li>
+                                <li>Отправьте заявку</li>
+                                <li>Напишите нам в Телеграм <a href="https://t.me/TajSharaTV" target="_blank" style="color: #0088cc; font-weight: 600;">@TajSharaTV</a></li></li>
+                                <li>Ожидайте подтверждения администратора</li>
+                            </ol>
+                        </div>
+
+                        <!-- Сумма в сомони -->
+                        <div class="mb-3">
+                            <label for="amount_tjs" class="form-label fw-bold">
+                                💵 Сумма перевода (TJS)
+                            </label>
+                            <div class="input-group">
+                                <input 
+                                    type="number" 
+                                    name="amount_tjs" 
+                                    id="amount_tjs"
+                                    step="0.01" 
+                                    min="1"
+                                    class="form-control" 
+                                    placeholder="0.00"
+                                    autofocus
+                                    required
+                                >
+                                <span class="input-group-text">TJS</span>
+                            </div>
+                        </div>
+
+                        <!-- Предпросмотр в USD -->
+                        <div id="usd-preview" style="display: none;" class="alert alert-secondary mb-4">
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <strong>Сумма в долларах:</strong>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <span class="fs-4 text-success fw-bold" id="usd-amount">$0.00</span>
+                                </div>
+                            </div>
+                            <small class="text-muted">
+                                По курсу: 1 USD = {{ exchange_rate|floatformat:4 }} TJS
+                            </small>
+                        </div>
+
+                        <!-- Подтверждение перевода -->
+                        <div class="mb-3">
+                            <label for="transaction_proof" class="form-label fw-bold">
+                                🔖 Подтверждение перевода
+                            </label>
+                            <input 
+                                type="number" 
+                                name="transaction_proof" 
+                                id="transaction_proof"
+                                class="form-control" 
+                                placeholder="Номер операции из чека"
+                                min="1"
+                                required
+                            >
+                        </div>
+
+                        <!-- Кнопки -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                ✅ Отправить заявку на пополнение
+                            </button>
+                            <a href="{% url 'client_manager_profile' %}" class="btn btn-outline-secondary">
+                                ❌ Отмена
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- История заявок -->
+            {% if recent_requests %}
+            <div class="card requests-history-card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        📊 Мои последние заявки
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Дата</th>
+                                    <th>Сумма (TJS)</th>
+                                    <th>Сумма (USD)</th>
+                                    <th>Статус</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for req in recent_requests %}
+                                <tr>
+                                    <td><strong>#{{ req.id }}</strong></td>
+                                    <td>{{ req.created_at|date:"d.m.Y H:i" }}</td>
+                                    <td>{{ req.amount_tjs|floatformat:2 }} TJS</td>
+                                    <td>${{ req.amount_usd|floatformat:2 }}</td>
+                                    <td>
+                                        {% if req.status == 'pending' %}
+                                            <span class="badge bg-warning">⏳ Ожидает</span>
+                                        {% elif req.status == 'approved' %}
+                                            <span class="badge bg-success">✅ Одобрено</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">❌ Отклонено</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Общие стили карточек */
+    .card {
+        background: linear-gradient(135deg, #1e2749 0%, #252d4a 100%);
+        border: 1px solid rgba(91, 192, 190, 0.3);
+        border-radius: 15px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        transition: all 0.3s ease;
+        animation: fadeIn 0.5s ease;
+    }
+    
+    .card:hover {
+        border-color: rgba(91, 192, 190, 0.6);
+        transform: translateY(-2px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+    }
+    
+    .card-header {
+        background: linear-gradient(135deg, #3a506b 0%, #4a607b 100%);
+        border: none;
+        border-radius: 15px 15px 0 0;
+        padding: 20px;
+        color: #e0e0e0;
+    }
+    
+    .card-body {
+        padding: 1px;
+        color: #e0e0e0;
+    }
+    
+    /* Карточка курса валют */
+    .exchange-rate-card {
+        border: 2px solid rgba(91, 192, 190, 0.5);
+        background: linear-gradient(135deg, #1e2749 0%, #2d3561 100%);
+    }
+    
+    .exchange-icon {
+        font-size: 3rem;
+        margin-bottom: 10px;
+    }
+    
+    .rate-display {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 15px;
+    }
+    
+    .currency-from, .currency-to {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #5bc0be;
+        text-shadow: 0 0 10px rgba(91, 192, 190, 0.3);
+    }
+    
+    .rate-arrow {
+        font-size: 1.8rem;
+        color: #7dd3d1;
+    }
+    
+    /* Платёжные реквизиты */
+    .payment-info-card .card-header {
+        background: linear-gradient(135deg, #5bc0be 0%, #4aa8ab 100%);
+    }
+    
+    .payment-details {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .detail-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 15px;
+        background: rgba(11, 19, 43, 0.4);
+        border-radius: 10px;
+        border-left: 4px solid #5bc0be;
+    }
+    
+    .detail-item.single-line {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+    
+    .detail-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .detail-label {
+        font-weight: 600;
+        color: #b0b0b0;
+        font-size: 0.9rem;
+    }
+    
+    .detail-value {
+        font-weight: 700;
+        color: #5bc0be;
+        font-size: 1.1rem;
+    }
+    
+    .card-number {
+        font-family: 'Courier New', monospace;
+        letter-spacing: 2px;
+        cursor: pointer;
+        padding: 8px 12px;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+        user-select: all;
+    }
+    
+    .card-number:hover {
+        background: rgba(91, 192, 190, 0.2);
+        box-shadow: 0 0 12px rgba(91, 192, 190, 0.4);
+        transform: scale(1.05);
+    }
+    
+    /* Форма */
+    .form-control, .input-group-text {
+        background: rgba(11, 19, 43, 0.6);
+        color: #e0e0e0;
+        border: 2px solid rgba(91, 192, 190, 0.3);
+        border-radius: 10px;
+        padding: 10px 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus {
+        border-color: #5bc0be;
+        box-shadow: 0 0 20px rgba(91, 192, 190, 0.4);
+        background: rgba(11, 19, 43, 0.8);
+        color: #fff;
+    }
+    
+    .input-group-text {
+        background: linear-gradient(135deg, #3a506b 0%, #4a607b 100%);
+        font-weight: 700;
+        border-left: none;
+    }
+    
+    .input-group .form-control {
+        border-right: none;
+    }
+    
+    label {
+        color: #e0e0e0;
+        font-size: 1.05rem;
+    }
+    
+    /* Кнопки */
+    .btn-success {
+        background: linear-gradient(135deg, #5bc0be 0%, #4aa8ab 100%);
+        border: none;
+        color: #fff;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 15px 30px;
+        border-radius: 10px;
+        box-shadow: 0 6px 20px rgba(91, 192, 190, 0.4);
+        transition: all 0.3s ease;
+    }
+    
+    .btn-success:hover {
+        background: linear-gradient(135deg, #4aa8ab 0%, #3a8d90 100%);
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(91, 192, 190, 0.5);
+    }
+    
+    .btn-outline-secondary {
+        background: transparent;
+        border: 2px solid rgba(91, 192, 190, 0.3);
+        color: #e0e0e0;
+        font-weight: 600;
+        padding: 10px 25px;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-outline-secondary:hover {
+        background: rgba(91, 192, 190, 0.1);
+        border-color: #5bc0be;
+        color: #5bc0be;
+        transform: translateY(-2px);
+    }
+    
+    /* Alerts */
+    .alert {
+        border-radius: 10px;
+        border: none;
+        padding: 15px 20px;
+    }
+    
+    .alert-info {
+        background: linear-gradient(135deg, rgba(58, 80, 107, 0.3) 0%, rgba(74, 96, 123, 0.3) 100%);
+        border-left: 4px solid #5bc0be;
+        color: #e0e0e0;
+    }
+    
+    .alert-primary {
+        background: linear-gradient(135deg, rgba(58, 80, 107, 0.4) 0%, rgba(74, 96, 123, 0.4) 100%);
+        border-left: 4px solid #5bc0be;
+        color: #e0e0e0;
+    }
+    
+    .alert-warning {
+        background: linear-gradient(135deg, rgba(255, 193, 7, 0.2) 0%, rgba(255, 160, 0, 0.2) 100%);
+        border-left: 4px solid #ffc107;
+        color: #e0e0e0;
+    }
+    
+    .alert-secondary {
+        background: linear-gradient(135deg, rgba(30, 39, 73, 0.5) 0%, rgba(37, 45, 74, 0.5) 100%);
+        border-left: 4px solid #5bc0be;
+    }
+    
+    /* Таблица */
+    .table {
+        color: #e0e0e0;
+    }
+    
+    .table thead th {
+        background: linear-gradient(135deg, #3a506b 0%, #4a607b 100%);
+        color: #ffffff;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+        border: none;
+    }
+    
+    .table tbody tr {
+        background: rgba(30, 39, 73, 0.3);
+        border-bottom: 1px solid rgba(91, 192, 190, 0.1);
+        transition: all 0.2s ease;
+    }
+    
+    .table tbody tr:hover {
+        background: rgba(91, 192, 190, 0.1);
+        transform: scale(1.01);
+    }
+    
+    .table td {
+        padding: 15px 10px;
+        border: none;
+    }
+    
+    .badge {
+        padding: 8px 15px;
+        font-size: 0.9rem;
+        border-radius: 8px;
+    }
+    
+    /* Анимация */
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .text-muted {
+        color: #b0b0b0 !important;
+    }
+    
+    .text-success {
+        color: #5bc0be !important;
+    }
+</style>
+
+<script>
+    // Копирование в буфер обмена при клике на номер карты
+    function copyToClipboard(text) {
+        const cleanedText = text.replace(/\s/g, '');
+        navigator.clipboard.writeText(cleanedText).then(() => {
+            // Визуальное подтверждение копирования
+            const originalText = '📋 Скопировано!';
+            const tempDiv = document.createElement('div');
+            tempDiv.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(135deg, #5bc0be 0%, #4aa8ab 100%); color: white; padding: 15px 30px; border-radius: 10px; font-weight: 700; z-index: 9999; box-shadow: 0 8px 25px rgba(91, 192, 190, 0.5);';
+            tempDiv.textContent = '✅ Номер карты скопирован!';
+            document.body.appendChild(tempDiv);
+            
+            setTimeout(() => {
+                tempDiv.style.opacity = '0';
+                tempDiv.style.transition = 'opacity 0.3s ease';
+                setTimeout(() => tempDiv.remove(), 300);
+            }, 1500);
+        });
+    }
+    
+    // Расчёт суммы в долларах
+    document.addEventListener('DOMContentLoaded', function() {
+        const amountTjsInput = document.getElementById('amount_tjs');
+        const usdPreview = document.getElementById('usd-preview');
+        const usdAmount = document.getElementById('usd-amount');
+        const exchangeRate = {{ exchange_rate }};
+        
+        amountTjsInput.addEventListener('input', function() {
+            const tjs = parseFloat(this.value) || 0;
+            
+            if (tjs > 0) {
+                const usd = tjs / exchangeRate;
+                usdAmount.textContent = '$' + usd.toFixed(2);
+                usdPreview.style.display = 'block';
+            } else {
+                usdPreview.style.display = 'none';
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block title %}Управление скидками менеджеров{% endblock %}
+
+{% block content %}
+<style>
+    .discount-card {
+        background: linear-gradient(135deg, rgba(91, 192, 190, 0.1) 0%, rgba(28, 37, 65, 0.85) 100%);
+        border: 1px solid rgba(91, 192, 190, 0.2);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 15px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        transition: all 0.3s ease;
+    }
+
+    .discount-card:hover {
+        border-color: rgba(91, 192, 190, 0.5);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    }
+
+    .manager-name {
+        font-size: 18px;
+        font-weight: 700;
+        color: rgba(224, 224, 224, 0.95);
+        margin-bottom: 12px;
+    }
+
+    .discount-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr auto;
+        gap: 15px;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .discount-field {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .discount-label {
+        font-size: 11px;
+        color: rgba(224, 224, 224, 0.6);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 6px;
+    }
+
+    .discount-value {
+        font-size: 20px;
+        font-weight: 700;
+        color: #5bc0be;
+    }
+
+    .discount-value.auto {
+        color: #5bc0be;
+    }
+
+    .discount-value.manual {
+        color: #ffb800;
+    }
+
+    .discount-value.total {
+        color: #2ed573;
+        font-size: 24px;
+    }
+
+    .form-group {
+        margin-bottom: 0;
+    }
+
+    .form-control {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(91, 192, 190, 0.3);
+        color: rgba(224, 224, 224, 0.95);
+        padding: 10px 12px;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+
+    .form-control:focus {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: #5bc0be;
+        color: rgba(224, 224, 224, 0.95);
+        box-shadow: 0 0 0 3px rgba(91, 192, 190, 0.1);
+    }
+
+    .btn-apply {
+        background: linear-gradient(135deg, #5bc0be 0%, #4a9b98 100%);
+        color: white;
+        border: none;
+        padding: 10px 16px;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 14px;
+    }
+
+    .btn-apply:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(91, 192, 190, 0.3);
+    }
+
+    .clients-count {
+        font-size: 12px;
+        color: rgba(224, 224, 224, 0.6);
+        margin-top: 8px;
+    }
+
+    .divider {
+        border: none;
+        border-top: 1px solid rgba(91, 192, 190, 0.1);
+        margin: 15px 0;
+    }
+
+    .page-title {
+        font-size: clamp(24px, 5vw, 32px);
+        font-weight: 700;
+        color: rgba(224, 224, 224, 0.95);
+        margin-bottom: 30px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 30px 20px;
+    }
+
+    @media (max-width: 768px) {
+        .discount-row {
+            grid-template-columns: 1fr;
+        }
+
+        .discount-card {
+            padding: 15px;
+        }
+    }
+</style>
+
+<div class="container">
+    <h1 class="page-title">🎁 Управление ручными скидками менеджеров</h1>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div>
+        {% for profile in profiles %}
+        <div class="discount-card">
+            <div class="manager-name">👤 {{ profile.user.first_name|default:profile.user.username }}</div>
+            
+            <div class="discount-row">
+                <div class="discount-field">
+                    <div class="discount-label">🔵 Автоматическая скидка</div>
+                    <div class="discount-value auto">{{ profile.discount_percentage|floatformat:1 }}%</div>
+                    <div class="clients-count">{{ profile.get_clients_count }} активных клиентов</div>
+                </div>
+
+                <div class="discount-field">
+                    <div class="discount-label">🟡 Ручная скидка (редактируемая)</div>
+                    <form method="post" style="display: contents;">
+                        {% csrf_token %}
+                        <input type="hidden" name="profile_id" value="{{ profile.id }}">
+                        <div style="display: flex; gap: 8px; align-items: flex-end;">
+                            <input 
+                                type="number" 
+                                name="manual_discount_percentage" 
+                                value="{{ profile.manual_discount_percentage|floatformat:2 }}"
+                                step="0.01"
+                                min="0"
+                                max="99"
+                                class="form-control"
+                                style="width: 100px; padding: 8px; height: 38px;"
+                                placeholder="0.00"
+                            >
+                            <span style="color: rgba(224, 224, 224, 0.6); font-weight: 600;">%</span>
+                            <button type="submit" class="btn-apply">Применить</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="discount-field">
+                    <div class="discount-label">💚 ИТОГОВАЯ скидка</div>
+                    <div class="discount-value total">{{ profile.get_total_discount|floatformat:1 }}%</div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div style="font-size: 12px; color: rgba(224, 224, 224, 0.6); display: flex; gap: 20px;">
+                <span>📊 Всего клиентов: <strong style="color: rgba(224, 224, 224, 0.9);">{{ profile.get_total_clients_count }}</strong></span>
+                <span>📊 Активных: <strong style="color: #5bc0be;">{{ profile.get_clients_count }}</strong></span>
+                <span>💰 Баланс: <strong style="color: #2ed573;">{{ profile.balance|floatformat:2 }}$</strong></span>
+            </div>
+        </div>
+        {% empty %}
+        <div style="text-align: center; padding: 50px 20px; color: rgba(224, 224, 224, 0.6);">
+            <p style="font-size: 18px; margin-bottom: 10px;">😕 Менеджеров не найдено</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div style="margin-top: 40px; padding: 20px; background: rgba(91, 192, 190, 0.1); border-left: 4px solid #5bc0be; border-radius: 8px;">
+        <h3 style="color: rgba(224, 224, 224, 0.9); margin-top: 0;">ℹ️ Информация о скидках</h3>
+        <ul style="color: rgba(224, 224, 224, 0.7); margin-bottom: 0; padding-left: 20px;">
+            <li><strong>Автоматическая скидка</strong> рассчитывается по количеству активных клиентов (≥10, ≥100, ≥200, ≥500)</li>
+            <li><strong>Ручная скидка</strong> выдается администратором как дополнительный бонус</li>
+            <li><strong>Итоговая скидка</strong> = Автоматическая + Ручная (максимум 99%)</li>
+            <li>Скидка применяется автоматически при покупке пакетов для клиентов</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

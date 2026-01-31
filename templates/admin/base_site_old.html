@@ -1,0 +1,1167 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | TajSharaTV{% endblock %}
+
+{% block branding %}
+<h1 id="site-name"><a href="{% url 'admin:index' %}">🔧 TajSharaTV</a></h1>
+{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    /* ========== СОВРЕМЕННЫЙ ДИЗАЙН АДМИНКИ С МОБИЛЬНОЙ АДАПТАЦИЕЙ ========== */
+    
+    /* Импорт шрифтов */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    /* CSS переменные - СТИЛЬНАЯ ПАЛИТРА */
+    :root {
+        --primary-color: #667eea;
+        --primary-bright: #764ba2;
+        --secondary-color: #f093fb;
+        --accent-color: #4facfe;
+        --success-color: #43e97b;
+        --warning-color: #fa709a;
+        --card-bg: #ffffff;
+        --border-color: rgba(102, 126, 234, 0.2);
+        --text-color: #000000;
+        --text-bright: #000000;
+        --shadow: 0 10px 40px rgba(102, 126, 234, 0.15);
+        --shadow-hover: 0 20px 60px rgba(102, 126, 234, 0.25);
+        --transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    /* Общие стили */
+    * {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    }
+    
+    html {
+        scroll-behavior: smooth;
+    }
+    
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        min-height: 100vh;
+        color: var(--text-bright);
+        position: relative;
+        overflow-x: hidden;
+    }
+
+    body::before {
+        content: '';
+        position: fixed;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: 
+            radial-gradient(circle at 20% 50%, rgba(250, 112, 154, 0.3) 0%, transparent 50%),
+            radial-gradient(circle at 80% 80%, rgba(79, 172, 254, 0.3) 0%, transparent 50%),
+            radial-gradient(circle at 40% 40%, rgba(67, 233, 123, 0.2) 0%, transparent 50%);
+        pointer-events: none;
+        z-index: -1;
+        animation: backgroundShift 20s ease-in-out infinite;
+    }
+    
+    @keyframes backgroundShift {
+        0%, 100% { transform: translate(0, 0) rotate(0deg); }
+        50% { transform: translate(-5%, -5%) rotate(5deg); }
+    }
+    
+    /* ========== ШАПКА ========== */
+    #header {
+        background: rgba(255, 255, 255, 0.95) !important;
+        box-shadow: 0 8px 32px rgba(102, 126, 234, 0.2) !important;
+        border-bottom: none !important;
+        padding: 20px 30px !important;
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        backdrop-filter: blur(20px) saturate(180%);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        border-radius: 0 0 20px 20px;
+        margin: 0 10px;
+    }
+    
+    #branding {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    
+    #branding h1 {
+        margin: 0 !important;
+        font-weight: 700 !important;
+        font-size: clamp(18px, 5vw, 28px) !important;
+        letter-spacing: -0.5px;
+    }
+    
+    #branding h1 a:link, #branding h1 a:visited {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        text-decoration: none !important;
+        transition: var(--transition);
+        display: inline-block;
+    }
+    
+    #branding h1 a:hover {
+        background: linear-gradient(135deg, var(--secondary-color) 0%, var(--accent-color) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        transform: scale(1.05) translateY(-2px);
+        filter: brightness(1.2);
+    }
+    
+    /* Инструменты пользователя */
+    #user-tools {
+        padding: 10px 20px !important;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    
+    #user-tools::before {
+        content: "👤 ";
+        font-size: 16px;
+    }
+    
+    #user-tools a {
+        color: var(--text-bright) !important;
+        padding: 8px 15px;
+        border-radius: 8px;
+        text-decoration: none !important;
+        transition: var(--transition);
+        font-weight: 600;
+        white-space: nowrap;
+        font-size: 0.9rem;
+        border: 2px solid transparent;
+    }
+    
+    #user-tools a:hover {
+        background: rgba(212, 197, 176, 0.4) !important;
+        color: var(--primary-color) !important;
+        transform: translateY(-2px);
+        border-color: rgba(139, 115, 85, 0.5);
+        box-shadow: 0 4px 15px rgba(139, 115, 85, 0.2);
+    }
+    
+    /* ========== НАВИГАЦИЯ (Breadcrumbs) ========== */
+    div.breadcrumbs {
+        background: rgba(255, 255, 255, 0.9) !important;
+        padding: 15px 25px !important;
+        border-radius: 15px !important;
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.15) !important;
+        margin: 20px 20px !important;
+        font-size: 1.05rem;
+        color: #000000 !important;
+        font-weight: 600;
+        border: 2px solid rgba(102, 126, 234, 0.2);
+        backdrop-filter: blur(10px);
+        transition: var(--transition);
+    }
+    
+    div.breadcrumbs:hover {
+        box-shadow: 0 8px 30px rgba(102, 126, 234, 0.25) !important;
+        transform: translateY(-2px);
+    }
+    
+    div.breadcrumbs a {
+        color: #000000 !important;
+        text-decoration: none !important;
+        font-weight: 600;
+        transition: var(--transition);
+    }
+    
+    div.breadcrumbs a:hover {
+        color: #000000 !important;
+        text-decoration: underline !important;
+        text-shadow: 0 0 8px rgba(107, 93, 79, 0.3);
+    }
+    
+    /* ========== КОНТЕНТ ========== */
+    #content {
+        background: transparent !important;
+        padding: 20px !important;
+    }
+    
+    #container {
+        padding: 0 !important;
+    }
+    
+    /* Модули и карточки */
+    .module, .object-tools {
+        background: rgba(255, 255, 255, 0.95) !important;
+        border: 2px solid transparent !important;
+        border-radius: 20px !important;
+        box-shadow: var(--shadow) !important;
+        margin-bottom: 25px !important;
+        overflow: hidden;
+        transition: var(--transition);
+        backdrop-filter: blur(10px);
+        position: relative;
+    }
+    
+    .module::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--primary-color), var(--secondary-color), var(--accent-color));
+        opacity: 0;
+        transition: var(--transition);
+    }
+    
+    .module:hover {
+        box-shadow: var(--shadow-hover) !important;
+        transform: translateY(-8px) scale(1.02);
+        border-color: rgba(102, 126, 234, 0.3) !important;
+    }
+    
+    .module:hover::before {
+        opacity: 1;
+    }
+    
+    .module h2, .module caption, .inline-group h2 {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-bright) 100%) !important;
+        color: #ffffff !important;
+        padding: 18px 25px !important;
+        font-weight: 700 !important;
+        font-size: clamp(16px, 3vw, 18px) !important;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        border: none !important;
+        margin: 0 !important;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .module h2::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        transition: left 0.5s;
+    }
+    
+    .module:hover h2::before {
+        left: 100%;
+    }
+    
+    /* ========== КНОПКИ ========== */
+    .button, input[type=submit], input[type=button], .submit-row input, button {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-bright) 100%) !important;
+        color: #ffffff !important;
+        border: none !important;
+        padding: 14px 28px !important;
+        border-radius: 12px !important;
+        font-weight: 700 !important;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        cursor: pointer !important;
+        transition: var(--transition) !important;
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3) !important;
+        font-size: clamp(14px, 2vw, 15px);
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .button::before, input[type=submit]::before, input[type=button]::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.3);
+        transform: translate(-50%, -50%);
+        transition: width 0.6s, height 0.6s;
+    }
+    
+    .button:hover::before, input[type=submit]:hover::before, input[type=button]:hover::before {
+        width: 300px;
+        height: 300px;
+    }
+    
+    .button:hover, input[type=submit]:hover, input[type=button]:hover, .submit-row input:hover {
+        background: linear-gradient(135deg, var(--secondary-color) 0%, var(--accent-color) 100%) !important;
+        transform: translateY(-4px) scale(1.05) !important;
+        box-shadow: 0 12px 35px rgba(102, 126, 234, 0.5) !important;
+    }
+    
+    .button:active, input[type=submit]:active {
+        transform: translateY(0) !important;
+    }
+    
+    /* Кнопка удаления */
+    .deletelink, .deletelink-box a {
+        background: linear-gradient(135deg, #e63946 0%, #c72833 100%) !important;
+        box-shadow: 0 4px 15px rgba(230, 57, 70, 0.3) !important;
+    }
+    
+    .deletelink:hover, .deletelink-box a:hover {
+        background: linear-gradient(135deg, #c72833 0%, #a8212b 100%) !important;
+        box-shadow: 0 6px 20px rgba(230, 57, 70, 0.4) !important;
+    }
+    
+    /* ========== ССЫЛКИ ========== */
+    a:link, a:visited {
+        color: var(--primary-color) !important;
+        text-decoration: none !important;
+        transition: var(--transition);
+        font-weight: 600;
+        position: relative;
+    }
+    
+    a:hover {
+        color: var(--primary-bright) !important;
+        text-decoration: none !important;
+    }
+    
+    a::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 0;
+        height: 2px;
+        background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+        transition: width 0.3s ease;
+    }
+    
+    a:hover::after {
+        width: 100%;
+    }
+    
+    /* ========== ТАБЛИЦЫ ========== */
+    table {
+        background: rgba(255, 255, 255, 0.95) !important;
+        border-radius: 15px !important;
+        overflow: hidden;
+        width: 100% !important;
+        border-collapse: collapse;
+        box-shadow: 0 10px 40px rgba(102, 126, 234, 0.15);
+        backdrop-filter: blur(10px);
+    }
+    
+    th {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-bright) 100%) !important;
+        color: #ffffff !important;
+        padding: 20px 18px !important;
+        font-weight: 700 !important;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        font-size: 14px !important;
+        text-align: left;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        border: none;
+        position: relative;
+    }
+    
+    th::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--accent-color), var(--secondary-color));
+    }
+    
+    th a {
+        color: #ffffff !important;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    th a:hover {
+        color: #ffffff !important;
+        filter: brightness(1.2);
+    }
+    
+    tr.row1 {
+        background: rgba(255, 255, 255, 0.8) !important;
+        border-bottom: 1px solid rgba(102, 126, 234, 0.1) !important;
+        transition: var(--transition);
+    }
+    
+    tr.row2 {
+        background: rgba(248, 249, 255, 0.8) !important;
+        border-bottom: 1px solid rgba(102, 126, 234, 0.1) !important;
+        transition: var(--transition);
+    }
+    
+    tr:hover {
+        background: linear-gradient(90deg, rgba(102, 126, 234, 0.1) 0%, rgba(250, 112, 154, 0.1) 100%) !important;
+        transition: all 0.3s ease;
+        box-shadow: inset 0 0 0 2px rgba(102, 126, 234, 0.3);
+        transform: scale(1.005);
+    }
+
+    tr:hover td {
+        color: #000000 !important;
+        font-weight: 700;
+    }
+    
+    td {
+        padding: 18px 18px !important;
+        border-bottom: 1px solid rgba(102, 126, 234, 0.1) !important;
+        word-break: break-word;
+        color: var(--text-color) !important;
+        font-weight: 600;
+        font-size: 15px;
+        letter-spacing: 0.3px;
+    }
+    
+    /* ========== ФОРМЫ ========== */
+    input, select, textarea {
+        background: #ffffff !important;
+        color: #000000 !important;
+        border: 2px solid rgba(102, 126, 234, 0.2) !important;
+        border-radius: 12px !important;
+        padding: 12px 18px !important;
+        transition: var(--transition) !important;
+        font-size: 15px;
+        font-weight: 500;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.05);
+    }
+    
+    input:focus, select:focus, textarea:focus {
+        border-color: var(--primary-color) !important;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15), 0 8px 20px rgba(102, 126, 234, 0.2) !important;
+        background: #ffffff !important;
+        outline: none !important;
+        transform: translateY(-2px) scale(1.01);
+    }
+    
+    .vTextField, .vLargeTextField, .vURLField {
+        background: #ffffff !important;
+        color: #000000 !important;
+    }
+    
+    label {
+        color: #000000 !important;
+        font-weight: 700;
+        font-size: 15px;
+        text-shadow: none;
+    }
+    
+    /* ========== ПАГИНАЦИЯ ========== */
+    .paginator {
+        padding: 15px 0;
+        text-align: center;
+    }
+    
+    .paginator a:link, .paginator a:visited {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-bright) 100%) !important;
+        color: #ffffff !important;
+        padding: 10px 16px !important;
+        border-radius: 10px !important;
+        margin: 0 4px !important;
+        text-decoration: none !important;
+        transition: var(--transition);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        display: inline-block;
+        font-size: 0.95rem;
+        font-weight: 600;
+        border: none;
+    }
+    
+    .paginator a:hover {
+        background: linear-gradient(135deg, var(--accent-color) 0%, var(--secondary-color) 100%) !important;
+        transform: translateY(-3px) scale(1.05);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    .paginator .this-page {
+        background: linear-gradient(135deg, var(--success-color) 0%, var(--accent-color) 100%) !important;
+        color: #ffffff !important;
+        padding: 10px 16px !important;
+        border-radius: 10px !important;
+        margin: 0 4px !important;
+        font-weight: 700;
+        display: inline-block;
+        border: none;
+        box-shadow: 0 6px 16px rgba(67, 233, 123, 0.4);
+    }
+    
+    /* ========== КАЛЕНДАРЬ ========== */
+    .calendar caption, .calendarbox h2 {
+        background: linear-gradient(135deg, #e8e3d8 0%, #d4c5b0 100%) !important;
+        color: var(--text-bright) !important;
+        padding: 10px !important;
+        font-weight: 600;
+    }
+    
+    .calendar td.selected a {
+        background: var(--primary-color) !important;
+        color: #fff !important;
+        border-radius: 50%;
+    }
+    
+    .calendar td a:hover {
+        background: rgba(212, 197, 176, 0.4) !important;
+        border-radius: 50%;
+    }
+    
+    /* ========== ФИЛЬТРЫ ========== */
+    #changelist-filter {
+        background: linear-gradient(135deg, #fdfcfa 0%, #f7f5f0 100%) !important;
+        border-radius: 12px !important;
+        padding: 20px !important;
+        border: 2px solid var(--border-color) !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 0 15px rgba(139, 115, 85, 0.1);
+    }
+    
+    #changelist-filter h2 {
+        color: var(--primary-color) !important;
+        font-weight: 700;
+        margin-bottom: 15px;
+        font-size: clamp(14px, 3vw, 16px);
+        text-shadow: none;
+    }
+    
+    #changelist-filter li.selected a {
+        color: var(--primary-bright) !important;
+        font-weight: 700;
+        background: rgba(212, 197, 176, 0.3);
+        padding: 4px 8px;
+        border-radius: 4px;
+    }
+    
+    #changelist-filter li {
+        list-style: none;
+        padding: 8px 0;
+    }
+    
+    #changelist-filter a {
+        color: var(--text-color) !important;
+        font-size: 1rem;
+        font-weight: 600;
+        transition: var(--transition);
+    }
+    
+    #changelist-filter a:hover {
+        color: var(--primary-color) !important;
+        padding-left: 5px;
+    }
+    
+    /* ========== СООБЩЕНИЯ ========== */
+    .messagelist {
+        margin: 0 0 25px 0 !important;
+        padding: 0 !important;
+    }
+    
+    .messagelist li {
+        background: rgba(255, 255, 255, 0.95) !important;
+        border-left: 5px solid var(--primary-color) !important;
+        color: var(--text-bright) !important;
+        padding: 18px 25px !important;
+        margin-bottom: 15px !important;
+        border-radius: 15px !important;
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15) !important;
+        word-break: break-word;
+        font-weight: 500;
+        backdrop-filter: blur(10px);
+        transition: var(--transition);
+    }
+    
+    .messagelist li:hover {
+        transform: translateX(5px);
+        box-shadow: 0 12px 35px rgba(102, 126, 234, 0.25) !important;
+    }
+    
+    .messagelist .success {
+        border-left-color: var(--success-color) !important;
+        box-shadow: 0 8px 25px rgba(67, 233, 123, 0.2) !important;
+    }
+    
+    .messagelist .warning {
+        border-left-color: var(--warning-color) !important;
+        box-shadow: 0 8px 25px rgba(250, 112, 154, 0.2) !important;
+    }
+    
+    .messagelist .error {
+        border-left-color: #f44336 !important;
+        box-shadow: 0 8px 25px rgba(244, 67, 54, 0.2) !important;
+    }
+    
+    /* ========== АНИМАЦИИ ========== */
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .module, .object-tools {
+        animation: fadeIn 0.5s ease;
+    }
+    
+    /* ========== ДОПОЛНИТЕЛЬНЫЕ УЛУЧШЕНИЯ ========== */
+    .selector-chosen h2 {
+        background: linear-gradient(135deg, var(--primary-bright) 0%, var(--primary-color) 100%) !important;
+        color: #ffffff !important;
+    }
+    
+    .object-tools li {
+        margin-left: 10px;
+        display: inline-block;
+    }
+    
+    .object-tools a {
+        padding: 10px 20px !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Скроллбар */
+    ::-webkit-scrollbar {
+        width: 10px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: rgba(102, 126, 234, 0.05);
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, var(--accent-color) 0%, var(--primary-bright) 100%);
+        box-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
+    }
+
+    /* Бегущая строка объявлений в админке */
+    .admin-announcements {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        padding: 15px 20px;
+        margin: 15px 20px 0 20px;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        border: none;
+        backdrop-filter: blur(10px);
+    }
+
+    .admin-announcements__track {
+        display: flex;
+        gap: 32px;
+        white-space: nowrap;
+        animation: admin-scroll-left 28s linear infinite;
+        align-items: center;
+    }
+
+    .admin-announcements__item {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        color: #ffffff;
+        font-weight: 600;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .admin-announcements__icon {
+        font-size: 20px;
+    }
+
+    .admin-announcements__text {
+        font-size: 14px;
+    }
+
+    @keyframes admin-scroll-left {
+        0% {
+            transform: translateX(100%);
+        }
+        100% {
+            transform: translateX(-100%);
+        }
+    }
+
+    .admin-announcements:hover .admin-announcements__track {
+        animation-play-state: paused;
+    }
+    
+    /* ========== МОБИЛЬНАЯ АДАПТАЦИЯ ========== */
+    @media (max-width: 768px) {
+        #header {
+            padding: 12px 15px !important;
+        }
+        
+        #branding h1 {
+            font-size: 20px !important;
+        }
+        
+        #branding h1::before {
+            font-size: 24px;
+        }
+        
+        #user-tools {
+            padding: 8px 15px !important;
+            gap: 5px;
+        }
+        
+        #user-tools a {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+        }
+        
+        #content {
+            padding: 15px !important;
+        }
+        
+        .module {
+            margin-bottom: 15px !important;
+        }
+        
+        .module h2, .module caption {
+            padding: 12px 15px !important;
+            font-size: 14px !important;
+        }
+        
+        table {
+            font-size: 0.85rem;
+        }
+        
+        th {
+            padding: 10px 8px !important;
+            font-size: 10px !important;
+        }
+        
+        td {
+            padding: 10px 8px !important;
+        }
+        
+        .button, input[type=submit], input[type=button], .submit-row input, button {
+            padding: 8px 16px !important;
+            font-size: 12px !important;
+        }
+        
+        input, select, textarea {
+            padding: 8px 12px !important;
+            font-size: 13px;
+        }
+        
+        .paginator a:link, .paginator a:visited {
+            padding: 6px 10px !important;
+            font-size: 0.85rem;
+            margin: 0 1px !important;
+        }
+        
+        #changelist-filter {
+            margin-top: 20px;
+            padding: 15px !important;
+        }
+        
+        div.breadcrumbs {
+            margin: 10px 15px !important;
+            padding: 10px 15px !important;
+            font-size: 0.9rem;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        #header {
+            padding: 10px 12px !important;
+        }
+        
+        #branding {
+            gap: 5px;
+        }
+        
+        #branding h1 {
+            font-size: 16px !important;
+        }
+        
+        #branding h1::before {
+            font-size: 20px;
+        }
+        
+        #user-tools {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        
+        #user-tools a {
+            padding: 6px 10px;
+            font-size: 0.8rem;
+            width: 100%;
+            text-align: center;
+        }
+        
+        #content {
+            padding: 10px !important;
+        }
+        
+        .module {
+            border-radius: 8px !important;
+            margin-bottom: 12px !important;
+        }
+        
+        .module h2, .module caption {
+            padding: 10px 12px !important;
+            font-size: 13px !important;
+        }
+        
+        table {
+            font-size: 0.75rem;
+            display: block;
+            overflow-x: auto;
+        }
+        
+        th {
+            padding: 8px 5px !important;
+            font-size: 9px !important;
+        }
+        
+        td {
+            padding: 8px 5px !important;
+        }
+        
+        .button, input[type=submit], input[type=button], .submit-row input, button {
+            padding: 10px 15px !important;
+            font-size: 11px !important;
+            width: 100%;
+            margin: 5px 0;
+        }
+        
+        input, select, textarea {
+            padding: 10px 10px !important;
+            font-size: 12px;
+        }
+        
+        .messagelist li {
+            padding: 12px 15px !important;
+            font-size: 0.9rem;
+        }
+        
+        div.breadcrumbs {
+            font-size: 0.85rem;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+        
+        #changelist-filter {
+            padding: 12px !important;
+        }
+        
+        #changelist-filter h2 {
+            font-size: 13px;
+        }
+    }
+    
+    /* ========== ТЕМНЫЙ РЕЖИМ ПОДДЕРЖКА ========== */
+    @media (prefers-color-scheme: dark) {
+        body {
+            color-scheme: dark;
+        }
+    }
+
+    /* ========== ПЕРЕКЛЮЧАТЕЛИ ТЕМЫ И ПЛОТНОСТИ ========== */
+    html[data-theme="dark"] {
+        --text-color: #e6e6e6;
+        --text-bright: #ffffff;
+        --border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    html[data-theme="dark"] body {
+        background: linear-gradient(135deg, #0d0f1a 0%, #1a1f2e 100%) !important;
+        color: var(--text-bright) !important;
+    }
+
+    html[data-theme="dark"] #header {
+        background: rgba(18, 22, 36, 0.9) !important;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+        border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+    }
+
+    html[data-theme="dark"] .module,
+    html[data-theme="dark"] table,
+    html[data-theme="dark"] .messagelist li,
+    html[data-theme="dark"] div.breadcrumbs,
+    html[data-theme="dark"] .admin-announcements,
+    html[data-theme="dark"] #changelist-filter {
+        background: rgba(20, 24, 40, 0.92) !important;
+        border-color: rgba(255, 255, 255, 0.08) !important;
+        color: var(--text-bright) !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35) !important;
+    }
+
+    html[data-theme="dark"] th {
+        background: linear-gradient(135deg, #3b3f68 0%, #2a2f4a 100%) !important;
+        color: #ffffff !important;
+        border: none !important;
+    }
+
+    html[data-theme="dark"] input,
+    html[data-theme="dark"] select,
+    html[data-theme="dark"] textarea {
+        background: #0f1324 !important;
+        color: #ffffff !important;
+        border-color: rgba(255, 255, 255, 0.15) !important;
+        box-shadow: none !important;
+    }
+
+    html[data-theme="dark"] a:link,
+    html[data-theme="dark"] a:visited {
+        color: #aab2ff !important;
+    }
+
+    html[data-density="compact"] .button,
+    html[data-density="compact"] input[type=submit],
+    html[data-density="compact"] input[type=button],
+    html[data-density="compact"] .submit-row input,
+    html[data-density="compact"] button {
+        padding: 8px 14px !important;
+        border-radius: 8px !important;
+        font-size: 13px !important;
+    }
+
+    html[data-density="compact"] td {
+        padding: 10px 12px !important;
+        font-size: 14px !important;
+    }
+
+    html[data-density="compact"] th {
+        padding: 12px 14px !important;
+        font-size: 13px !important;
+        letter-spacing: 1px !important;
+    }
+
+    html[data-density="compact"] input,
+    html[data-density="compact"] select,
+    html[data-density="compact"] textarea {
+        padding: 8px 12px !important;
+        border-radius: 8px !important;
+        font-size: 14px !important;
+    }
+
+    html[data-density="compact"] .module h2, 
+    html[data-density="compact"] .module caption, 
+    html[data-density="compact"] .inline-group h2 {
+        padding: 14px 18px !important;
+        letter-spacing: 1px !important;
+    }
+
+    /* ========== ПАЛИТРЫ ДЛЯ ДНЕВНОЙ ТЕМЫ ========== */
+    /* Молочная палитра */
+    html[data-theme="light"][data-palette="milk"] {
+        --primary-color: #c7b79b;
+        --primary-bright: #e0d6c7;
+        --secondary-color: #f2efe9;
+        --accent-color: #b8a68a;
+        --card-bg: #ffffff;
+        --border-color: rgba(0,0,0,0.08);
+        --text-color: #000000;
+        --text-bright: #000000;
+        --shadow: 0 10px 30px rgba(0,0,0,0.08);
+        --shadow-hover: 0 20px 50px rgba(0,0,0,0.12);
+    }
+
+    html[data-theme="light"][data-palette="milk"] body {
+        background: linear-gradient(135deg, #fffdf8 0%, #f7f3eb 100%) !important;
+    }
+
+    /* Синяя фирменная палитра */
+    html[data-theme="light"][data-palette="blue"] {
+        --primary-color: #1a3a5c;
+        --primary-bright: #2d5a8c;
+        --secondary-color: #4da3ff;
+        --accent-color: #6bb3ff;
+        --card-bg: #ffffff;
+        --border-color: rgba(26,58,92,0.2);
+        --text-color: #0e1a26;
+        --text-bright: #0e1a26;
+        --shadow: 0 10px 30px rgba(26,58,92,0.15);
+        --shadow-hover: 0 20px 50px rgba(26,58,92,0.25);
+    }
+
+    html[data-theme="light"][data-palette="blue"] body {
+        background: linear-gradient(135deg, #eaf3ff 0%, #f5f9ff 100%) !important;
+    }
+
+    /* Яркая (текущая) палитра */
+    html[data-theme="light"][data-palette="vibrant"] {
+        /* оставляем базовые переменные файла */
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+    {{ block.super }}
+    {% if announcements %}
+    <div class="admin-announcements">
+        <div class="admin-announcements__track">
+            {% for announcement in announcements %}
+            <span class="admin-announcements__item">
+                <span class="admin-announcements__icon">{{ announcement.icon }}</span>
+                <span class="admin-announcements__text">{{ announcement.title }}: {{ announcement.content|truncatewords:10 }}</span>
+            </span>
+            {% endfor %}
+            {% for announcement in announcements %}
+            <span class="admin-announcements__item">
+                <span class="admin-announcements__icon">{{ announcement.icon }}</span>
+                <span class="admin-announcements__text">{{ announcement.title }}: {{ announcement.content|truncatewords:10 }}</span>
+            </span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+{% endblock %}
+
+{% block userlinks %}
+    <button id="toggleThemeBtn" type="button" style="
+        margin-right: 10px;
+        padding: 8px 14px;
+        color: #fff;
+        text-decoration: none;
+        border-radius: 10px;
+        border: none;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        font-weight: 700;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.35);
+        cursor: pointer;
+    " onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='translateY(0)';">
+        🌙 Тема
+    </button>
+
+    <button id="toggleDensityBtn" type="button" style="
+        margin-right: 10px;
+        padding: 8px 14px;
+        color: #fff;
+        text-decoration: none;
+        border-radius: 10px;
+        border: none;
+        background: linear-gradient(135deg, #43e97b 0%, #4facfe 100%);
+        font-weight: 700;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+        box-shadow: 0 6px 16px rgba(79, 172, 254, 0.35);
+        cursor: pointer;
+    " onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='translateY(0)';">
+        ↕️ Плотность
+    </button>
+
+    <a href="{% url 'home' %}" style="
+        margin-right: 10px; 
+        padding: 10px 18px; 
+        background: linear-gradient(135deg, #2d5a8c 0%, #1a3a5c 100%); 
+        color: #fff; 
+        text-decoration: none; 
+        border-radius: 8px;
+        font-weight: 700;
+        box-shadow: 0 4px 15px rgba(45, 90, 140, 0.4), 0 0 20px rgba(45, 90, 140, 0.2);
+        transition: all 0.3s ease;
+        display: inline-block;
+        font-size: 0.95rem;
+        white-space: nowrap;
+        border: 2px solid rgba(45, 90, 140, 0.3);
+    " onmouseover="this.style.transform='translateY(-2px) scale(1.05)'; this.style.boxShadow='0 6px 25px rgba(45, 90, 140, 0.6), 0 0 30px rgba(45, 90, 140, 0.3)'" onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='0 4px 15px rgba(45, 90, 140, 0.4), 0 0 20px rgba(45, 90, 140, 0.2)'">
+        🏠 Сайт
+    </a>
+    <a href="{% url 'admin:password_change' %}" style="
+        margin-right: 10px;
+        padding: 8px 14px;
+        color: var(--text-bright);
+        text-decoration: none;
+        border-radius: 8px;
+        border: 1px solid rgba(45, 90, 140, 0.4);
+        background: rgba(45, 90, 140, 0.15);
+        font-weight: 600;
+        transition: var(--transition);
+        white-space: nowrap;
+    " onmouseover="this.style.transform='translateY(-2px)'; this.style.background='rgba(45, 90, 140, 0.25)'" onmouseout="this.style.transform='translateY(0)'; this.style.background='rgba(45, 90, 140, 0.15)'">
+        Изменить пароль
+    </a>
+    <a href="{% url 'logout' %}?next={% url 'admin:login' %}" style="
+        padding: 8px 14px;
+        color: #ffefef;
+        text-decoration: none;
+        border-radius: 8px;
+        border: 1px solid rgba(230, 57, 70, 0.5);
+        background: linear-gradient(135deg, rgba(230, 57, 70, 0.3) 0%, rgba(199, 40, 51, 0.3) 100%);
+        font-weight: 700;
+        transition: var(--transition);
+        white-space: nowrap;
+        box-shadow: 0 2px 10px rgba(230, 57, 70, 0.3);
+    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 15px rgba(230, 57, 70, 0.5)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 10px rgba(230, 57, 70, 0.3)'">
+        Выйти
+    </a>
+{% endblock %}
+
+{% block footer %}
+{{ block.super }}
+<script>
+    (function() {
+        const root = document.documentElement;
+        const THEME_KEY = 'adminTheme';
+        const DENSITY_KEY = 'adminDensity';
+
+        function applyTheme(theme) {
+            root.setAttribute('data-theme', theme);
+            const btn = document.getElementById('toggleThemeBtn');
+            if (btn) btn.textContent = theme === 'dark' ? '☀️ Тема' : '🌙 Тема';
+        }
+
+        function applyDensity(density) {
+            root.setAttribute('data-density', density);
+            const btn = document.getElementById('toggleDensityBtn');
+            if (btn) btn.textContent = density === 'compact' ? '⬆️ Обычная' : '↕️ Плотность';
+        }
+
+        function init() {
+            const savedTheme = localStorage.getItem(THEME_KEY) || 'light';
+            const savedDensity = localStorage.getItem(DENSITY_KEY) || 'regular';
+            applyTheme(savedTheme);
+            applyDensity(savedDensity);
+
+            const themeBtn = document.getElementById('toggleThemeBtn');
+            const densityBtn = document.getElementById('toggleDensityBtn');
+
+            if (themeBtn) themeBtn.addEventListener('click', function() {
+                const next = (root.getAttribute('data-theme') || 'light') === 'light' ? 'dark' : 'light';
+                localStorage.setItem(THEME_KEY, next);
+                applyTheme(next);
+            });
+
+            if (densityBtn) densityBtn.addEventListener('click', function() {
+                const next = (root.getAttribute('data-density') || 'regular') === 'regular' ? 'compact' : 'regular';
+                localStorage.setItem(DENSITY_KEY, next);
+                applyDensity(next);
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    })();
+</script>
+{% endblock %}

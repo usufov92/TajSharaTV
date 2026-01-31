@@ -1,0 +1,157 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | TajSharaTV Admin{% endblock %}
+
+{% block branding %}
+<div style="display: flex; align-items: center; gap: 12px;">
+  <h1 id="site-name" style="margin: 0;">
+    <a href="{% url 'admin:index' %}" style="text-decoration: none; color: #5bc0be; font-weight: 700; font-size: 24px; display: flex; align-items: center; gap: 8px;">
+      🔧 TajSharaTV Admin
+    </a>
+  </h1>
+</div>
+{% endblock %}
+
+{% block userlinks %}
+  {{ block.super }}
+  <button id="theme-toggle" class="theme-toggle" title="Переключить тему">
+    <span id="theme-icon">🌙</span>
+  </button>
+{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/modern-ui.css' %}">
+<link rel="stylesheet" href="{% static 'css/components.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin-enhanced.css' %}">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block extrahead %}
+<script>
+// Dark Mode Toggle
+document.addEventListener('DOMContentLoaded', function() {
+  const themeToggle = document.getElementById('theme-toggle');
+  const themeIcon = document.getElementById('theme-icon');
+  const currentTheme = localStorage.getItem('theme') || 'light';
+  
+  document.documentElement.setAttribute('data-theme', currentTheme);
+  themeIcon.textContent = currentTheme === 'dark' ? '☀️' : '🌙';
+  
+  if (themeToggle) {
+    themeToggle.addEventListener('click', function() {
+      const theme = document.documentElement.getAttribute('data-theme');
+      const newTheme = theme === 'dark' ? 'light' : 'dark';
+      
+      document.documentElement.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      themeIcon.textContent = newTheme === 'dark' ? '☀️' : '🌙';
+    });
+  }
+});
+
+// Улучшенная навигация
+document.addEventListener('DOMContentLoaded', function() {
+  const navLinks = document.querySelectorAll('#nav-sidebar a');
+  const currentPath = window.location.pathname;
+  
+  navLinks.forEach(link => {
+    if (link.getAttribute('href') === currentPath) {
+      link.classList.add('current');
+    }
+  });
+});
+
+// Анимация для таблиц
+document.addEventListener('DOMContentLoaded', function() {
+  const tables = document.querySelectorAll('#result_list, .results');
+  tables.forEach(table => {
+    const rows = table.querySelectorAll('tbody tr');
+    rows.forEach((row, index) => {
+      row.style.animation = `fadeInUp 0.3s ease ${index * 0.05}s both`;
+    });
+  });
+});
+
+// Подтверждение удаления
+document.addEventListener('DOMContentLoaded', function() {
+  const deleteLinks = document.querySelectorAll('.deletelink');
+  deleteLinks.forEach(link => {
+    link.addEventListener('click', function(e) {
+      if (!confirm('Вы уверены, что хотите удалить этот объект?')) {
+        e.preventDefault();
+      }
+    });
+  });
+});
+</script>
+
+<style>
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Дополнительные стили для анимаций */
+.module {
+  animation: fadeInUp 0.4s ease both;
+}
+
+#result_list tbody tr,
+.results tbody tr {
+  animation: fadeInUp 0.3s ease both;
+}
+
+/* Стиль для кнопки переключения темы */
+.theme-toggle {
+  background: rgba(91, 192, 190, 0.1);
+  border: 2px solid transparent;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 18px;
+  margin-left: 10px;
+}
+
+.theme-toggle:hover {
+  background: rgba(91, 192, 190, 0.2);
+  border-color: #5bc0be;
+  transform: rotate(180deg);
+}
+
+/* Улучшенный скролл для sidebar */
+#nav-sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(91, 192, 190, 0.3) transparent;
+}
+
+#nav-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+#nav-sidebar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+#nav-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(91, 192, 190, 0.3);
+  border-radius: 3px;
+}
+
+#nav-sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(91, 192, 190, 0.5);
+}
+</style>
+{% endblock %}

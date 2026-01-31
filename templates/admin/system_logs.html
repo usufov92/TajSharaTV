@@ -1,0 +1,145 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block title %}Системные логи{% endblock %}
+
+{% block content %}
+<div class="system-logs-container">
+    <div class="page-header">
+        <h1>Системные логи</h1>
+        <p class="subtitle">Просмотр последних записей из automation.log и logs/error.log</p>
+    </div>
+
+    <div class="logs-grid">
+        {% for log in logs %}
+            <div class="log-card">
+                <div class="log-card__header">
+                    <div>
+                        <div class="log-name">{{ log.name }}</div>
+                        <div class="log-path">{{ log.path }}</div>
+                        {% if log.exists %}
+                            <div class="log-meta">Размер: {{ log.size|filesizeformat }} · Обновлено: {{ log.mtime|date:"d.m.Y H:i" }}</div>
+                        {% endif %}
+                    </div>
+                    <span class="status {{ log.exists|yesno:'ok,missing' }}">{% if log.exists %}Файл найден{% else %}Нет файла{% endif %}</span>
+                </div>
+                <div class="log-card__body">
+                    {% if log.exists and log.content %}
+                        <pre class="log-content">{% for line in log.content %}{{ line }}{% endfor %}</pre>
+                    {% elif log.exists %}
+                        <div class="empty">Файл пуст</div>
+                    {% else %}
+                        <div class="empty">Файл не найден</div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+.system-logs-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 16px;
+}
+
+.page-header {
+    margin-bottom: 16px;
+}
+
+.page-header h1 {
+    margin: 0 0 6px 0;
+    font-size: 26px;
+}
+
+.subtitle {
+    margin: 0;
+    color: #666;
+}
+
+.logs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 16px;
+}
+
+.log-card {
+    background: #fff;
+    border: 1px solid #dcdcdc;
+    border-radius: 10px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.log-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    border-bottom: 1px solid #eee;
+    background: linear-gradient(135deg, #f6f7fb 0%, #eef1f7 100%);
+}
+
+.log-name {
+    font-weight: 700;
+    font-size: 15px;
+}
+
+.log-path {
+    font-size: 12px;
+    color: #777;
+    word-break: break-all;
+}
+
+.status {
+    padding: 6px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.status.ok {
+    background: #e6f4ea;
+    color: #1e8e3e;
+    border: 1px solid #b8e0c2;
+}
+
+.status.missing {
+    background: #fff4e5;
+    color: #b26b00;
+    border: 1px solid #f6d5a3;
+}
+
+.log-card__body {
+    padding: 0;
+    max-height: 520px;
+    overflow: auto;
+}
+
+.log-content {
+    margin: 0;
+    padding: 12px 14px;
+    background: #0d1117;
+    color: #d0d7de;
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.empty {
+    padding: 12px 14px;
+    color: #666;
+}
+
+@media (max-width: 600px) {
+    .logs-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}

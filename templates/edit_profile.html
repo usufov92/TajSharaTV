@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Редактирование профиля{% endblock %}
+
+{% block content %}
+<div class="container mt-4" style="max-width: 600px;">
+    <!-- Редактирование телефона -->
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">✏️ Редактировать профиль</h5>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label"><strong>👤 Логин:</strong></label>
+                    <input type="text" class="form-control" value="{{ user.username }}" disabled>
+                    <small class="text-muted">Логин изменить нельзя</small>
+                </div>
+                {{ form.as_p }}
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg">💾 Сохранить изменения</button>
+                    <a href="{% url 'client_manager_profile' %}" class="btn btn-outline-secondary">❌ Отмена</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Смена пароля -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0">🔒 Безопасность</h5>
+        </div>
+        <div class="card-body">
+            <p class="mb-3">
+                <i class="bi bi-shield-lock"></i>
+                Регулярно меняйте пароль для безопасности вашего аккаунта
+            </p>
+            <a href="{% url 'password_change' %}" class="btn btn-warning w-100">
+                🔑 Сменить пароль
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

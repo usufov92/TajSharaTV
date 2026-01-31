@@ -1,0 +1,41 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Django makemigrations",
+			"type": "shell",
+			"command": "\"C:/Users/musuf/OneDrive/Рабочий стол/Projects/на разработка для атоматизация/TajSharaTV/venv/Scripts/python.exe\" manage.py makemigrations",
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Django makemigrations",
+			"type": "shell",
+			"command": "\"C:/Users/musuf/OneDrive/Рабочий стол/Projects/на разработка для атоматизация/TajSharaTV/venv/Scripts/python.exe\" manage.py makemigrations",
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Django migrate",
+			"type": "shell",
+			"command": "\"C:/Users/musuf/OneDrive/Рабочий стол/Projects/на разработка для атоматизация/TajSharaTV/venv/Scripts/python.exe\" manage.py migrate",
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Django migrate (retry)",
+			"type": "shell",
+			"command": "\"C:/Users/musuf/OneDrive/Рабочий стол/Projects/на разработка для атоматизация/TajSharaTV/venv/Scripts/python.exe\" manage.py migrate",
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
+		}
+	]
+}

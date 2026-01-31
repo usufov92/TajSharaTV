@@ -1,0 +1,354 @@
+{% extends "base.html" %}
+{% block title %}Профиль менеджера{% endblock %}
+
+{% block content %}
+<style>
+    .profile-header {
+        background: linear-gradient(135deg, rgba(91, 192, 190, 0.15) 0%, rgba(28, 37, 65, 0.9) 100%);
+        border: 1px solid rgba(91, 192, 190, 0.3);
+        border-radius: 12px;
+        padding: clamp(20px, 4vw, 30px);
+        margin-bottom: 30px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .profile-title {
+        font-size: clamp(20px, 4vw, 28px);
+        font-weight: 700;
+        color: rgba(224, 224, 224, 0.95);
+        margin-bottom: 25px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: clamp(15px, 2vw, 20px);
+    }
+
+    .info-item {
+        background: rgba(91, 192, 190, 0.1);
+        border: 1px solid rgba(91, 192, 190, 0.2);
+        border-radius: 8px;
+        padding: clamp(12px, 2vw, 16px);
+    }
+
+    .info-label {
+        font-size: clamp(11px, 1.5vw, 12px);
+        color: rgba(224, 224, 224, 0.6);
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .info-value {
+        font-size: clamp(16px, 3vw, 20px);
+        color: #5bc0be;
+        font-weight: 700;
+    }
+
+    .section-card {
+        background: linear-gradient(135deg, rgba(91, 192, 190, 0.1) 0%, rgba(28, 37, 65, 0.85) 100%);
+        border: 1px solid rgba(91, 192, 190, 0.2);
+        border-radius: 12px;
+        padding: clamp(20px, 3vw, 25px);
+        margin-bottom: 25px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    }
+
+    .section-title {
+        font-size: clamp(16px, 2.5vw, 20px);
+        font-weight: 600;
+        color: rgba(224, 224, 224, 0.9);
+        margin-bottom: 18px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(91, 192, 190, 0.2);
+    }
+
+    .action-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: clamp(10px, 2vw, 15px);
+    }
+
+    .btn-action {
+        padding: clamp(10px, 2vw, 14px) clamp(12px, 2vw, 18px);
+        border: none;
+        border-radius: 8px;
+        font-size: clamp(12px, 2vw, 14px);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        white-space: nowrap;
+    }
+
+    .btn-primary-action {
+        background: linear-gradient(135deg, #5bc0be 0%, #4a9b98 100%);
+        color: #fff;
+    }
+
+    .btn-primary-action:hover {
+        background: linear-gradient(135deg, #6dd4d2 0%, #5baaa8 100%);
+        box-shadow: 0 8px 24px rgba(91, 192, 190, 0.3);
+        transform: translateY(-2px);
+    }
+
+    .btn-secondary-action {
+        background: rgba(91, 192, 190, 0.2);
+        color: #5bc0be;
+        border: 1.5px solid #5bc0be;
+    }
+
+    .btn-secondary-action:hover {
+        background: rgba(91, 192, 190, 0.3);
+        box-shadow: 0 4px 12px rgba(91, 192, 190, 0.2);
+    }
+
+    .btn-admin-action {
+        background: rgba(220, 53, 69, 0.2);
+        color: #ff6b7a;
+        border: 1.5px solid #ff6b7a;
+    }
+
+    .btn-admin-action:hover {
+        background: rgba(220, 53, 69, 0.3);
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.2);
+    }
+
+    .hint-text {
+        font-size: clamp(11px, 1.5vw, 12px);
+        color: rgba(224, 224, 224, 0.5);
+        margin-top: 12px;
+        text-align: center;
+        font-style: italic;
+    }
+
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: clamp(10px, 2vw, 15px);
+        margin-top: 15px;
+    }
+
+    .stat-box {
+        background: rgba(91, 192, 190, 0.1);
+        border: 1px solid rgba(91, 192, 190, 0.2);
+        border-radius: 8px;
+        padding: clamp(10px, 2vw, 14px);
+        text-align: center;
+    }
+
+    .stat-label {
+        font-size: clamp(10px, 1.5vw, 11px);
+        color: rgba(224, 224, 224, 0.6);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+    }
+
+    .stat-value {
+        font-size: clamp(18px, 3vw, 24px);
+        color: #5bc0be;
+        font-weight: 700;
+    }
+
+    .divider {
+        height: 1px;
+        background: rgba(91, 192, 190, 0.2);
+        margin: 20px 0;
+    }
+
+    @media (max-width: 768px) {
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .action-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .btn-action {
+            width: 100%;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .profile-header {
+            padding: 12px;
+        }
+
+        .section-card {
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .info-grid {
+            gap: 10px;
+        }
+
+        .action-grid {
+            gap: 8px;
+        }
+
+        .stats-row {
+            gap: 8px;
+        }
+    }
+</style>
+
+<script>
+    // Обработка ошибок для предотвращения вывода в консоль
+    window.addEventListener('error', function(e) {
+        if (e.message && e.message.includes('checkout popup config')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    // Подавление необработанных ошибок Promise
+    window.addEventListener('unhandledrejection', function(e) {
+        if (e.reason && e.reason.message && e.reason.message.includes('checkout popup config')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+</script>
+
+<div class="container mt-5">
+    <!-- Profile Header -->
+    <div class="profile-header">
+        <h2 class="profile-title">
+            👤 Профиль менеджера
+        </h2>
+
+        <!-- Basic Info -->
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-label">Логин</div>
+                <div class="info-value">{{ user.username }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Телефон</div>
+                <div class="info-value">{{ user.profile.phone|default:"—" }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Баланс</div>
+                <div class="info-value">{{ user.profile.balance|floatformat:2 }} TJS</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Активных клиентов</div>
+                <div class="info-value" style="color: #5bc0be;">{{ user.profile.get_clients_count }}</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Всего клиентов</div>
+                <div class="info-value" style="color: rgba(224, 224, 224, 0.6);">{{ user.profile.get_total_clients_count }}</div>
+            </div>
+            <div class="info-item" style="background: linear-gradient(135deg, rgba(91, 192, 190, 0.2) 0%, rgba(46, 213, 115, 0.15) 100%);">
+                <div class="info-label">🎁 Итоговая скидка</div>
+                <div class="info-value" style="color: #2ed573; font-size: clamp(20px, 4vw, 28px);">
+                    {{ user.profile.get_total_discount|floatformat:0 }}%
+                </div>
+                <div style="font-size: 12px; color: rgba(224, 224, 224, 0.7); margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(46, 213, 115, 0.3);">
+                    {% if user.profile.manual_discount_percentage > 0 %}
+                    🔵 {{ user.profile.discount_percentage|floatformat:0 }}% (автом.) + 🟡 {{ user.profile.manual_discount_percentage|floatformat:0 }}% (ручная)
+                    {% else %}
+                    🔵 {{ user.profile.discount_percentage|floatformat:0 }}% автоматическая
+                    {% endif %}
+                </div>
+            </div>
+            {% if user.profile.next_discount_level %}
+            <div class="info-item" style="background: rgba(255, 184, 0, 0.1); border-color: rgba(255, 184, 0, 0.3);">
+                <div class="info-label">📊 До следующей скидки</div>
+                <div class="info-value" style="color: #ffb800; font-size: clamp(14px, 2.5vw, 18px);">
+                    +{{ user.profile.next_discount_level.clients_needed }} активных → {{ user.profile.next_discount_level.discount }}%
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Discount Levels Info -->
+    <div class="section-card" style="background: linear-gradient(135deg, rgba(46, 213, 115, 0.1) 0%, rgba(28, 37, 65, 0.85) 100%);">
+        <h3 class="section-title">🎯 Система скидок по количеству активных клиентов</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; margin-top: 15px;">
+            <div style="background: rgba(91, 192, 190, 0.15); border: 2px solid {% if user.profile.get_clients_count >= 10 %}#2ed573{% else %}rgba(91, 192, 190, 0.3){% endif %}; border-radius: 10px; padding: 15px; text-align: center;">
+                <div style="font-size: 28px; font-weight: 700; color: {% if user.profile.get_clients_count >= 10 %}#2ed573{% else %}rgba(224, 224, 224, 0.5){% endif %};">10%</div>
+                <div style="font-size: 12px; color: rgba(224, 224, 224, 0.7); margin-top: 5px;">от 10 активных</div>
+            </div>
+            <div style="background: rgba(91, 192, 190, 0.15); border: 2px solid {% if user.profile.get_clients_count >= 100 %}#2ed573{% else %}rgba(91, 192, 190, 0.3){% endif %}; border-radius: 10px; padding: 15px; text-align: center;">
+                <div style="font-size: 28px; font-weight: 700; color: {% if user.profile.get_clients_count >= 100 %}#2ed573{% else %}rgba(224, 224, 224, 0.5){% endif %};">25%</div>
+                <div style="font-size: 12px; color: rgba(224, 224, 224, 0.7); margin-top: 5px;">от 100 активных</div>
+            </div>
+            <div style="background: rgba(91, 192, 190, 0.15); border: 2px solid {% if user.profile.get_clients_count >= 200 %}#2ed573{% else %}rgba(91, 192, 190, 0.3){% endif %}; border-radius: 10px; padding: 15px; text-align: center;">
+                <div style="font-size: 28px; font-weight: 700; color: {% if user.profile.get_clients_count >= 200 %}#2ed573{% else %}rgba(224, 224, 224, 0.5){% endif %};">50%</div>
+                <div style="font-size: 12px; color: rgba(224, 224, 224, 0.7); margin-top: 5px;">от 200 активных</div>
+            </div>
+            <div style="background: rgba(91, 192, 190, 0.15); border: 2px solid {% if user.profile.get_clients_count >= 500 %}#2ed573{% else %}rgba(91, 192, 190, 0.3){% endif %}; border-radius: 10px; padding: 15px; text-align: center;">
+                <div style="font-size: 28px; font-weight: 700; color: {% if user.profile.get_clients_count >= 500 %}#2ed573{% else %}rgba(224, 224, 224, 0.5){% endif %};">70%</div>
+                <div style="font-size: 12px; color: rgba(224, 224, 224, 0.7); margin-top: 5px;">от 500 активных</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Actions -->
+    <div class="section-card">
+        <h3 class="section-title">⚙️ Основные действия</h3>
+        <div class="action-grid">
+            <a href="{% url 'edit_profile' %}" class="btn-action btn-primary-action">
+                ✏️ Редактировать
+            </a>
+            <a href="{% url 'add_client' %}" class="btn-action btn-primary-action">
+                ➕ Добавить клиента
+            </a>
+            <a href="{% url 'clients_list' %}" class="btn-action btn-secondary-action">
+                👥 Клиенты
+            </a>
+            <a href="{% url 'select_packages' %}" class="btn-action btn-secondary-action">
+                📦 Пакеты
+            </a>
+        </div>
+    </div>
+
+    <!-- Balance Section -->
+    <div class="section-card">
+        <h3 class="section-title">💰 Управление балансом</h3>
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <a href="{% url 'topup_balance' %}" class="btn btn-primary" style="flex: 1; min-width: 180px;">
+                <i class="fas fa-plus-circle"></i> Пополнить баланс
+            </a>
+            <a href="{% url 'balance_history' %}" class="btn btn-info" style="flex: 1; min-width: 180px;">
+                <i class="fas fa-history"></i> История операций
+            </a>
+        </div>
+        <p class="hint-text">💡 Ваш баланс используется для покупки пакетов клиентам</p>
+    </div>
+
+    {% if user.is_superuser %}
+    <!-- Admin Section -->
+    <div class="section-card" style="background: linear-gradient(135deg, rgba(220, 53, 69, 0.1) 0%, rgba(28, 37, 65, 0.85) 100%); border-color: rgba(220, 53, 69, 0.3);">
+        <h3 class="section-title" style="border-bottom-color: rgba(220, 53, 69, 0.2); color: #ff6b7a;">
+            👨‍💼 Администратор
+        </h3>
+        <div class="action-grid">
+            <a href="{% url 'admin_topup_balance' %}" class="btn-action btn-admin-action">
+                💰 Пополнение (Все)
+            </a>
+            <a href="/admin/" class="btn-action btn-admin-action">
+                🔧 Админ панель
+            </a>
+        </div>
+        <p class="hint-text">Управляйте объявлениями, платежами и одобряйте запросы</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+{% block title %}IPTV данные{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --bg: #0b1524;
+        --panel: #0f1c30;
+        --stroke: rgba(255,255,255,0.08);
+        --glow: rgba(80,190,255,0.18);
+        --text: #e6f0ff;
+        --muted: #96a7c6;
+        --accent: #5fc9f3;
+        --accent-2: #67f0b0;
+        --shadow: 0 22px 45px rgba(0,0,0,0.35);
+        --font: "Inter", "Segoe UI", system-ui, sans-serif;
+    }
+
+    .page {
+        min-height: calc(100vh - 120px);
+        padding: clamp(18px,4vw,32px);
+        background: radial-gradient(circle at 12% 18%, rgba(103,240,176,0.09), transparent 24%),
+                    radial-gradient(circle at 82% 0%, rgba(95,201,243,0.12), transparent 26%),
+                    linear-gradient(150deg, #0a1224 0%, #0b1524 55%, #0c1a2e 100%);
+        font-family: var(--font);
+        color: var(--text);
+    }
+
+    .hero {
+        background: var(--panel);
+        border: 1px solid var(--stroke);
+        border-radius: 18px;
+        padding: clamp(18px,3vw,24px);
+        box-shadow: var(--shadow);
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 18px;
+    }
+
+    .hero::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(95,201,243,0.08), transparent 50%),
+                    radial-gradient(circle at 20% 20%, rgba(103,240,176,0.08), transparent 32%);
+        pointer-events: none;
+    }
+
+    .hero h1 {
+        margin: 0;
+        font-size: clamp(22px,3vw,28px);
+        letter-spacing: 0.4px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 9px 12px;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid var(--stroke);
+        color: var(--text);
+        font-size: 13px;
+    }
+
+    .panel {
+        background: var(--panel);
+        border: 1px solid var(--stroke);
+        border-radius: 16px;
+        padding: clamp(16px,3vw,20px);
+        box-shadow: var(--shadow);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .panel::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 80% 0%, var(--glow), transparent 40%);
+        pointer-events: none;
+    }
+
+    .section {
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--stroke);
+    }
+
+    .section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+
+    .section-title {
+        color: var(--muted);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        margin-bottom: 10px;
+        font-weight: 700;
+    }
+
+    .link-box {
+        background: rgba(255,255,255,0.03);
+        border: 1px solid var(--stroke);
+        border-radius: 12px;
+        padding: 10px 12px;
+        font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+        font-size: 12px;
+        word-break: break-all;
+        margin-bottom: 8px;
+    }
+
+    .link-box:last-child {
+        margin-bottom: 0;
+    }
+
+    .link-box a {
+        color: var(--accent);
+        text-decoration: none;
+    }
+
+    .link-box a:hover {
+        text-decoration: underline;
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 11px 14px;
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.08);
+        background: linear-gradient(135deg, #5fc9f3 0%, #55a4ff 50%, #67f0b0 100%);
+        color: #041018;
+        font-weight: 800;
+        letter-spacing: 0.2px;
+        box-shadow: 0 12px 32px rgba(103,240,176,0.25);
+        text-decoration: none;
+        transition: transform 0.12s ease, box-shadow 0.2s ease;
+        margin-top: 8px;
+    }
+
+    .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 14px 36px rgba(103,240,176,0.32);
+    }
+
+    .btn.secondary {
+        background: rgba(255,255,255,0.04);
+        color: var(--text);
+        box-shadow: none;
+        border-color: var(--stroke);
+    }
+
+    .timestamp {
+        color: var(--muted);
+        font-size: 12px;
+        margin-top: 12px;
+    }
+</style>
+
+<div class="page">
+    <div class="hero">
+        <h1>📺 IPTV данные</h1>
+        <div class="meta">
+            <span class="chip">Клиент: <strong>{{ client.username }}</strong></span>
+            {% if iptv_info.fetched_at %}
+            <span class="chip">Обновлено: {{ iptv_info.fetched_at|date:"d.m.Y H:i" }}</span>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if iptv_info %}
+    <div class="panel">
+        {% if iptv_info.token %}
+        <div class="section">
+            <div class="section-title">🔑 Токен IPTV</div>
+            <div class="chip" style="background: rgba(103,240,176,0.08); color: #b7ffe0; border-color: rgba(103,240,176,0.3);">
+                <strong>{{ iptv_info.token }}</strong>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="section">
+            
+            <div class="section-title">🔗 Самообновляемые ссылки</div>
+            {% if iptv_info.token %}
+            <div class="link-box">
+                <div style="color: var(--muted); font-size: 11px; margin-bottom: 4px;">M3U8 плейлист</div>
+                <div class="chip" style="background: rgba(103,240,176,0.08); color: #b7ffe0; border-color: rgba(103,240,176,0.3);">
+                <a href="http://m3u8.pw/{{ iptv_info.token }}/playlist.m3u8" target="_blank">http://m3u8.pw/{{ iptv_info.token }}/playlist.m3u8</a>
+            </div>
+            <div class="link-box">
+                <div style="color: var(--muted); font-size: 11px; margin-bottom: 4px;">M3U плейлист</div>
+                <div class="chip" style="background: rgba(103,240,176,0.08); color: #b7ffe0; border-color: rgba(103,240,176,0.3);">
+                <a href="http://m3u.pw/{{ iptv_info.token }}/playlist.m3u" target="_blank">http://m3u.pw/{{ iptv_info.token }}/playlist.m3u</a>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="section">
+            <div class="section-title">📥 Скачать плейлисты</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                {% if iptv_info.token %}
+                <a class="btn" href="http://m3u8.pw/{{ iptv_info.token }}/playlist.m3u8" download="playlist.m3u8">📥 M3U8</a>
+                {% endif %}
+                {% if iptv_info.token %}
+                <a class="btn" href="http://m3u.pw/{{ iptv_info.token }}/playlist.m3u" download="playlist.m3u">📥 M3U</a>
+                {% endif %}
+                {% if iptv_info.token %}
+                <a class="btn" href="/converter_m3u8_to_xml_spark.php?token={{ iptv_info.token }}" download="spark.xml">📥 Spark</a>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if iptv_info.total_channels %}
+        <div class="chip" style="background: rgba(247,194,102,0.1); color: #ffdca3; border-color: rgba(247,194,102,0.35);">
+            📡 Всего каналов: <strong>{{ iptv_info.total_channels }}</strong>
+        </div>
+        {% endif %}
+
+        <div class="timestamp">Данные получены: {{ iptv_info.fetched_at|date:"d.m.Y H:i" }}</div>
+        
+        <a href="{% url 'clients_list' %}" class="btn secondary" style="margin-top: 16px;">← К списку клиентов</a>
+    </div>
+    {% else %}
+    <div class="panel" style="text-align: center; padding: 40px;">
+        <p style="color: var(--muted);">IPTV данные не загружены. Запустите автоматическую загрузку.</p>
+        <a href="{% url 'clients_list' %}" class="btn secondary" style="margin-top: 16px;">← К списку клиентов</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

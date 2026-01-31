@@ -1,0 +1,336 @@
+{% extends "base.html" %}
+{% block title %}Аналитика транзакций{% endblock %}
+
+{% block content %}
+<style>
+  .analytics-header {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+
+  .analytics-title {
+    font-size: clamp(22px, 4vw, 30px);
+    font-weight: 800;
+    color: rgba(224, 224, 224, 0.95);
+  }
+
+  .analytics-subtitle {
+    color: rgba(224, 224, 224, 0.7);
+    font-size: clamp(13px, 2vw, 15px);
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: clamp(12px, 2vw, 16px);
+    margin-bottom: 20px;
+  }
+
+  .stat-card {
+    background: linear-gradient(135deg, rgba(91, 192, 190, 0.1) 0%, rgba(28, 37, 65, 0.85) 100%);
+    border: 1px solid rgba(91, 192, 190, 0.25);
+    border-radius: 12px;
+    padding: clamp(16px, 3vw, 22px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  }
+
+  .stat-card.accent {
+    border-color: rgba(91, 192, 190, 0.5);
+    box-shadow: 0 6px 22px rgba(91, 192, 190, 0.18);
+  }
+
+  .stat-label {
+    font-size: clamp(11px, 1.5vw, 12px);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: rgba(224, 224, 224, 0.65);
+    margin-bottom: 6px;
+  }
+
+  .stat-value {
+    font-size: clamp(26px, 5vw, 34px);
+    font-weight: 800;
+    color: #5bc0be;
+    margin-bottom: 6px;
+  }
+
+  .stat-hint {
+    font-size: clamp(12px, 2vw, 13px);
+    color: rgba(224, 224, 224, 0.65);
+  }
+
+  .section-card {
+    background: linear-gradient(135deg, rgba(30, 40, 60, 0.95) 0%, rgba(20, 30, 50, 0.98) 100%);
+    border: 1px solid rgba(91, 192, 190, 0.25);
+    border-radius: 12px;
+    padding: clamp(16px, 3vw, 22px);
+    margin-bottom: 18px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  }
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: clamp(16px, 3vw, 20px);
+    font-weight: 700;
+    color: rgba(224, 224, 224, 0.9);
+    margin-bottom: 12px;
+    border-bottom: 1px solid rgba(91, 192, 190, 0.25);
+    padding-bottom: 10px;
+  }
+
+  .table-modern {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: clamp(12px, 2vw, 14px);
+  }
+
+  .table-modern thead {
+    background: linear-gradient(135deg, rgba(91, 192, 190, 0.3) 0%, rgba(91, 192, 190, 0.2) 100%);
+    color: #ffffff;
+  }
+
+  .table-modern th,
+  .table-modern td {
+    padding: clamp(10px, 2vw, 12px);
+    text-align: left;
+  }
+
+  .table-modern tbody tr {
+    background: rgba(20, 30, 50, 0.4);
+    border-bottom: 1px solid rgba(91, 192, 190, 0.15);
+    transition: all 0.2s ease;
+  }
+
+  .table-modern tbody tr:hover {
+    background: rgba(91, 192, 190, 0.15);
+  }
+
+  .empty-state {
+    padding: clamp(14px, 3vw, 18px);
+    color: rgba(224, 224, 224, 0.7);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px dashed rgba(91, 192, 190, 0.4);
+    border-radius: 10px;
+    text-align: center;
+  }
+
+  .charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: clamp(12px, 2vw, 16px);
+  }
+
+  .chart-card {
+    background: linear-gradient(135deg, rgba(20, 30, 50, 0.9) 0%, rgba(12, 18, 38, 0.9) 100%);
+    border: 1px solid rgba(91, 192, 190, 0.25);
+    border-radius: 12px;
+    padding: clamp(14px, 3vw, 18px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  }
+
+  .chart-title {
+    font-size: clamp(14px, 2.5vw, 16px);
+    font-weight: 700;
+    color: rgba(224, 224, 224, 0.9);
+    margin-bottom: 10px;
+  }
+
+  .access-card {
+    background: linear-gradient(135deg, rgba(220, 53, 69, 0.12) 0%, rgba(28, 37, 65, 0.92) 100%);
+    border: 1px solid rgba(220, 53, 69, 0.4);
+    border-radius: 12px;
+    padding: clamp(18px, 4vw, 22px);
+    box-shadow: 0 6px 20px rgba(220, 53, 69, 0.2);
+    color: rgba(224, 224, 224, 0.9);
+  }
+
+  .access-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .btn-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: clamp(12px, 2vw, 14px);
+    transition: all 0.2s ease;
+    border: 1px solid rgba(91, 192, 190, 0.4);
+    color: #5bc0be;
+    background: rgba(91, 192, 190, 0.12);
+  }
+
+  .btn-link:hover {
+    background: rgba(91, 192, 190, 0.2);
+    box-shadow: 0 4px 12px rgba(91, 192, 190, 0.2);
+  }
+
+  @media (max-width: 480px) {
+    .table-modern th,
+    .table-modern td {
+      padding: 8px;
+    }
+  }
+</style>
+
+<div class="container mt-5">
+  {% if user.is_superuser %}
+  <div class="analytics-header">
+    <div class="analytics-title">📊 Аналитика транзакций</div>
+    <div class="analytics-subtitle">Обзор финансовых показателей и активности менеджеров</div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card accent">
+      <div class="stat-label">Общая сумма</div>
+      <div class="stat-value">{{ total_sum|default:"0" }} $</div>
+      <div class="stat-hint">По всем операциям</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Количество транзакций</div>
+      <div class="stat-value">{{ total_transactions|default:"0" }}</div>
+      <div class="stat-hint">Всего подтвержденных оплат</div>
+    </div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">🏆 Топ менеджеры</div>
+    {% if top_managers %}
+    <table class="table-modern">
+      <thead>
+        <tr><th>Менеджер</th><th>Сумма ($)</th><th>Количество</th></tr>
+      </thead>
+      <tbody>
+        {% for m in top_managers %}
+        <tr>
+          <td>{{ m.manager__username }}</td>
+          <td>{{ m.total }}</td>
+          <td>{{ m.count }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">Нет данных по менеджерам</div>
+    {% endif %}
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">👥 Топ клиенты</div>
+    {% if top_clients %}
+    <table class="table-modern">
+      <thead>
+        <tr><th>Клиент</th><th>Сумма ($)</th><th>Количество</th></tr>
+      </thead>
+      <tbody>
+        {% for c in top_clients %}
+        <tr>
+          <td>{{ c.client__username }}</td>
+          <td>{{ c.total }}</td>
+          <td>{{ c.count }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">Нет данных по клиентам</div>
+    {% endif %}
+  </div>
+
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">📈 Динамика по дням</div>
+      <canvas id="dailyChart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">📊 Динамика по месяцам</div>
+      <canvas id="monthlyChart"></canvas>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const dailyCtx = document.getElementById('dailyChart');
+    if (dailyCtx) {
+      new Chart(dailyCtx, {
+        type: 'line',
+        data: {
+          labels: [{% for d in daily_stats %}"{{ d.day|date:'d.m.Y' }}",{% endfor %}],
+          datasets: [{
+            label: 'Количество транзакций',
+            data: [{% for d in daily_stats %}{{ d.count }},{% endfor %}],
+            borderColor: 'rgba(91, 192, 190, 1)',
+            backgroundColor: 'rgba(91, 192, 190, 0.2)',
+            tension: 0.35,
+            fill: true
+          }, {
+            label: 'Сумма ($)',
+            data: [{% for d in daily_stats %}{{ d.total }},{% endfor %}],
+            borderColor: 'rgba(255, 193, 7, 1)',
+            backgroundColor: 'rgba(255, 193, 7, 0.2)',
+            tension: 0.35,
+            fill: true
+          }]
+        },
+        options: {
+          plugins: { legend: { labels: { color: '#e0e0e0' } } },
+          scales: {
+            x: { ticks: { color: '#c7c7c7' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+            y: { ticks: { color: '#c7c7c7' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+          }
+        }
+      });
+    }
+
+    const monthlyCtx = document.getElementById('monthlyChart');
+    if (monthlyCtx) {
+      new Chart(monthlyCtx, {
+        type: 'bar',
+        data: {
+          labels: [{% for m in monthly_stats %}"{{ m.month|date:'M Y' }}",{% endfor %}],
+          datasets: [{
+            label: 'Количество транзакций',
+            data: [{% for m in monthly_stats %}{{ m.count }},{% endfor %}],
+            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+          }, {
+            label: 'Сумма ($)',
+            data: [{% for m in monthly_stats %}{{ m.total }},{% endfor %}],
+            backgroundColor: 'rgba(255, 206, 86, 0.6)',
+            borderColor: 'rgba(255, 206, 86, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          plugins: { legend: { labels: { color: '#e0e0e0' } } },
+          scales: {
+            x: { ticks: { color: '#c7c7c7' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+            y: { ticks: { color: '#c7c7c7' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+          }
+        }
+      });
+    }
+  </script>
+  {% else %}
+  <div class="access-card">
+    <div style="font-size: clamp(16px, 3vw, 18px); font-weight: 700; margin-bottom: 6px;">Доступ ограничен</div>
+    <div>Раздел аналитики доступен только администраторам. Для менеджеров доступны история баланса и список клиентов.</div>
+    <div class="access-actions">
+      <a class="btn-link" href="{% url 'balance_history' %}">📊 История баланса</a>
+      <a class="btn-link" href="{% url 'clients_list' %}">👥 Клиенты</a>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Пополнение баланса менеджера{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Заголовок -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-cash-stack text-success"></i>
+                💰 Пополнение баланса менеджера
+            </h2>
+            <p class="text-muted mb-0">
+                <i class="bi bi-shield-lock text-danger"></i>
+                Только для администраторов
+            </p>
+        </div>
+        <div>
+            <a href="{% url 'home' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Вернуться
+            </a>
+        </div>
+    </div>
+
+    <!-- Сообщения -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row">
+        <!-- Форма пополнения -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-plus-circle"></i>
+                        Форма пополнения
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="topupForm">
+                        {% csrf_token %}
+                        
+                        <!-- Выбор менеджера -->
+                        <div class="mb-3">
+                            <label for="{{ form.manager.id_for_label }}" class="form-label fw-bold">
+                                {{ form.manager.label }}
+                            </label>
+                            {{ form.manager }}
+                            {% if form.manager.errors %}
+                                <div class="text-danger mt-1">
+                                    {{ form.manager.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Сумма пополнения -->
+                        <div class="mb-3">
+                            <label for="{{ form.amount.id_for_label }}" class="form-label fw-bold">
+                                {{ form.amount.label }}
+                            </label>
+                            {{ form.amount }}
+                            <small class="form-text text-muted d-block mt-1">
+                                {{ form.amount.help_text }}
+                            </small>
+                            {% if form.amount.errors %}
+                                <div class="text-danger mt-1">
+                                    {{ form.amount.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Комментарий -->
+                        <div class="mb-3">
+                            <label for="{{ form.comment.id_for_label }}" class="form-label fw-bold">
+                                {{ form.comment.label }}
+                            </label>
+                            {{ form.comment }}
+                            <small class="form-text text-muted d-block mt-1">
+                                {{ form.comment.help_text }}
+                            </small>
+                            {% if form.comment.errors %}
+                                <div class="text-danger mt-1">
+                                    {{ form.comment.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Кнопки -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="bi bi-check-circle"></i>
+                                Пополнить баланс
+                            </button>
+                            <button type="reset" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i>
+                                Очистить форму
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Список менеджеров и их балансов -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-people"></i>
+                        Балансы менеджеров
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if profiles %}
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>
+                                            <i class="bi bi-person"></i>
+                                            Менеджер
+                                        </th>
+                                        <th class="text-end">
+                                            <i class="bi bi-wallet2"></i>
+                                            Баланс
+                                        </th>
+                                        <th>
+                                            <i class="bi bi-phone"></i>
+                                            Телефон
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for profile in profiles %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ profile.user.username }}</strong>
+                                                {% if profile.user.is_superuser %}
+                                                    <span class="badge bg-danger ms-1">Admin</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="text-end">
+                                                {% if profile.balance < 10 %}
+                                                    <span class="badge bg-danger fs-6">
+                                                        ${{ profile.balance }}
+                                                    </span>
+                                                {% elif profile.balance < 50 %}
+                                                    <span class="badge bg-warning text-dark fs-6">
+                                                        ${{ profile.balance }}
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge bg-success fs-6">
+                                                        ${{ profile.balance }}
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if profile.phone %}
+                                                    <span class="text-muted">{{ profile.phone }}</span>
+                                                {% else %}
+                                                    <span class="text-muted fst-italic">Не указан</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="p-4 text-center text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                            <p>Нет зарегистрированных менеджеров</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Информационная карточка -->
+            <div class="card shadow-sm mt-3">
+                <div class="card-body bg-light">
+                    <h6 class="card-title">
+                        <i class="bi bi-info-circle text-primary"></i>
+                        Информация
+                    </h6>
+                    <ul class="mb-0 small">
+                        <li>Пополнение баланса доступно только администраторам</li>
+                        <li>Менеджеры используют баланс для покупки пакетов клиентам</li>
+                        <li>Все операции пополнения сохраняются в истории транзакций</li>
+                        <li>Минимальная сумма пополнения: <strong>0.01$</strong></li>
+                        <li>Максимальная сумма пополнения: <strong>100,000$</strong></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 10px;
+        border: none;
+    }
+    
+    .card-header {
+        border-radius: 10px 10px 0 0 !important;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #28a745;
+        box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: rgba(40, 167, 69, 0.05);
+    }
+    
+    .btn-success {
+        background-color: #28a745;
+        border-color: #28a745;
+    }
+    
+    .btn-success:hover {
+        background-color: #218838;
+        border-color: #1e7e34;
+    }
+</style>
+
+<script>
+    // Автофокус на поле выбора менеджера
+    document.addEventListener('DOMContentLoaded', function() {
+        const managerSelect = document.getElementById('{{ form.manager.id_for_label }}');
+        if (managerSelect) {
+            managerSelect.focus();
+        }
+        
+        // Подтверждение перед отправкой формы
+        const form = document.getElementById('topupForm');
+        form.addEventListener('submit', function(e) {
+            const managerName = managerSelect.options[managerSelect.selectedIndex].text;
+            const amount = document.getElementById('{{ form.amount.id_for_label }}').value;
+            
+            if (managerName && amount) {
+                const confirmed = confirm(
+                    `Подтвердите пополнение баланса:\n\n` +
+                    `Менеджер: ${managerName}\n` +
+                    `Сумма: $${amount}\n\n` +
+                    `Продолжить?`
+                );
+                
+                if (!confirmed) {
+                    e.preventDefault();
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

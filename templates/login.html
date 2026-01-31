@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Вход{% endblock %}
+{% block content %}
+<style>
+  .login-wrapper {
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .login-wrapper h2 {
+    margin-bottom: 30px;
+  }
+
+  .telegram-section {
+    margin-top: 35px;
+    padding: 20px;
+    background: linear-gradient(135deg, rgba(0, 136, 204, 0.1) 0%, rgba(0, 102, 170, 0.1) 100%);
+    border: 2px solid rgba(0, 136, 204, 0.3);
+    border-radius: 10px;
+    text-align: center;
+  }
+
+  .telegram-section p {
+    margin-bottom: 15px;
+    font-size: 14px;
+    color: rgba(224, 224, 224, 0.9);
+    font-weight: 500;
+  }
+
+  .telegram-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #0088cc 0%, #0066aa 100%);
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 136, 204, 0.4);
+  }
+
+  .telegram-link:hover {
+    background: linear-gradient(135deg, #0066aa 0%, #004488 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 136, 204, 0.5);
+    color: white;
+    text-decoration: none;
+  }
+
+  .telegram-link span:first-child {
+    font-size: 20px;
+  }
+</style>
+
+<div class="login-wrapper">
+  <h2>Вход в систему</h2>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Войти</button>
+  </form>
+
+  <div class="telegram-section">
+    <p>Есть вопросы? Свяжитесь с нами в Телеграме:</p>
+    <a href="https://t.me/TajSharaTV" target="_blank" class="telegram-link">
+      <span>✈️</span>
+      <span>@TajSharaTV</span>
+    </a>
+  </div>
+</div>
+{% endblock %}

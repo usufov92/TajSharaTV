@@ -1,0 +1,495 @@
+{% extends "base.html" %}
+
+{% block title %}Список клиентов{% endblock %}
+
+{% block content %}
+<style>
+    .clients-header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 6px;
+        flex-wrap: wrap;
+    }
+
+    .clients-title {
+        font-size: clamp(20px, 4vw, 28px);
+        font-weight: 700;
+        color: rgba(224, 224, 224, 0.95);
+    }
+
+    .clients-subtitle {
+        width: 100%;
+        color: rgba(224, 224, 224, 0.7);
+        font-size: clamp(13px, 2vw, 14px);
+        margin-bottom: 18px;
+    }
+
+    .add-client-btn {
+        margin-left: auto;
+        padding: clamp(8px, 2vw, 12px) clamp(12px, 2vw, 18px);
+        background: linear-gradient(135deg, #5bc0be 0%, #4a9b98 100%);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: clamp(13px, 2vw, 14px);
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .add-client-btn:hover {
+        background: linear-gradient(135deg, #6dd4d2 0%, #5baaa8 100%);
+        box-shadow: 0 8px 24px rgba(91, 192, 190, 0.3);
+        transform: translateY(-2px);
+    }
+
+    .table-wrapper {
+        background: linear-gradient(135deg, rgba(30, 40, 60, 0.95) 0%, rgba(20, 30, 50, 0.98) 100%);
+        border: 1px solid rgba(91, 192, 190, 0.3);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    .table-responsive-custom {
+        overflow-x: auto;
+        border-radius: 12px;
+    }
+
+    #clientsTable {
+        margin-bottom: 0;
+        font-size: clamp(12px, 2vw, 14px);
+        background: transparent;
+    }
+
+    #clientsTable thead {
+        background: linear-gradient(135deg, rgba(91, 192, 190, 0.3) 0%, rgba(91, 192, 190, 0.2) 100%);
+        border-bottom: 2px solid rgba(91, 192, 190, 0.5);
+    }
+
+    #clientsTable thead th {
+        color: #ffffff;
+        font-weight: 700;
+        padding: clamp(12px, 2vw, 16px);
+        border: none;
+        white-space: nowrap;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    #clientsTable tbody td {
+        color: #f0f0f0;
+        padding: clamp(10px, 2vw, 14px);
+        border-color: rgba(91, 192, 190, 0.15);
+        vertical-align: middle;
+        background: rgba(20, 30, 50, 0.4);
+    }
+
+    #clientsTable tbody td strong {
+        color: #ffffff;
+        font-weight: 700;
+    }
+
+    #clientsTable tbody td code {
+        color: #5bc0be;
+        background: rgba(91, 192, 190, 0.15);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+
+    .client-username-link {
+        color: #90caf9;
+        text-decoration: none;
+        font-weight: 700;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+    }
+
+    .client-username-link:hover {
+        color: #64b5f6;
+        border-bottom-color: #64b5f6;
+        text-shadow: 0 0 8px rgba(100, 181, 246, 0.5);
+    }
+
+    #clientsTable tbody tr {
+        transition: all 0.3s ease;
+        border-bottom: 1px solid rgba(91, 192, 190, 0.15);
+    }
+
+    #clientsTable tbody tr:hover {
+        background: rgba(91, 192, 190, 0.2) !important;
+        box-shadow: inset 0 0 0 1px rgba(91, 192, 190, 0.4);
+    }
+
+    #clientsTable tbody tr:hover td {
+        background: transparent;
+        color: #ffffff;
+    }
+
+    .badge-package {
+        padding: clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px);
+        border-radius: 6px;
+        font-size: clamp(11px, 1.5vw, 12px);
+        font-weight: 700;
+        display: inline-block;
+    }
+
+    .badge-promo {
+        background: rgba(255, 193, 7, 0.3);
+        color: #ffd54f;
+        border: 1px solid rgba(255, 193, 7, 0.6);
+    }
+
+    .badge-iptv {
+        background: rgba(91, 192, 190, 0.3);
+        color: #7dd4d2;
+        border: 1px solid rgba(91, 192, 190, 0.6);
+    }
+
+    .badge-default {
+        background: rgba(255, 255, 255, 0.15);
+        color: #e0e0e0;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .badge-status {
+        padding: clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px);
+        border-radius: 6px;
+        font-size: clamp(11px, 1.5vw, 12px);
+        font-weight: 700;
+        display: inline-block;
+    }
+
+    .badge-active {
+        background: rgba(76, 175, 80, 0.3);
+        color: #81c784;
+        border: 1px solid rgba(76, 175, 80, 0.6);
+    }
+
+    .badge-expired {
+        background: rgba(220, 53, 69, 0.3);
+        color: #ef5350;
+        border: 1px solid rgba(220, 53, 69, 0.6);
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: clamp(4px, 1vw, 8px);
+        flex-wrap: wrap;
+    }
+
+    .btn-small {
+        padding: clamp(6px, 1.5vw, 8px) clamp(8px, 1.5vw, 12px);
+        border: none;
+        border-radius: 6px;
+        font-size: clamp(11px, 1.5vw, 12px);
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 32px;
+    }
+
+    .btn-edit {
+        background: rgba(33, 150, 243, 0.5);
+        color: #90caf9;
+        border: 2px solid rgba(33, 150, 243, 0.8);
+        font-weight: 700;
+    }
+
+    .btn-edit:hover {
+        background: rgba(33, 150, 243, 0.7);
+        color: #ffffff;
+        box-shadow: 0 4px 12px rgba(33, 150, 243, 0.6);
+    }
+
+    .btn-buy {
+        background: rgba(76, 175, 80, 0.5);
+        color: #a5d6a7;
+        border: 2px solid rgba(76, 175, 80, 0.8);
+        font-weight: 700;
+    }
+
+    .btn-buy:hover {
+        background: rgba(76, 175, 80, 0.7);
+        color: #ffffff;
+        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.6);
+    }
+
+    .btn-iptv {
+        background: rgba(91, 192, 190, 0.45);
+        color: #7dd4d2;
+        border: 2px solid rgba(91, 192, 190, 0.8);
+        font-weight: 700;
+    }
+
+    .btn-iptv:hover {
+        background: rgba(91, 192, 190, 0.65);
+        color: #ffffff;
+        box-shadow: 0 4px 12px rgba(91, 192, 190, 0.6);
+    }
+
+    .btn-settings {
+        background: rgba(255, 193, 7, 0.5);
+        color: #ffe082;
+        border: 2px solid rgba(255, 193, 7, 0.8);
+        font-weight: 700;
+    }
+
+    .btn-settings:hover {
+        background: rgba(255, 193, 7, 0.7);
+        color: #ffffff;
+        box-shadow: 0 4px 12px rgba(255, 193, 7, 0.6);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: clamp(30px, 5vw, 50px);
+        color: rgba(224, 224, 224, 0.5);
+    }
+
+    .empty-state-icon {
+        font-size: clamp(32px, 8vw, 64px);
+        margin-bottom: 15px;
+    }
+
+    .empty-state-text {
+        font-size: clamp(14px, 2vw, 16px);
+        margin-bottom: 20px;
+    }
+
+    .dataTables_wrapper {
+        color: #f0f0f0;
+        padding: 15px;
+    }
+
+    .dataTables_filter input {
+        background: rgba(30, 40, 60, 0.8) !important;
+        border: 1px solid rgba(91, 192, 190, 0.5) !important;
+        color: #ffffff !important;
+        border-radius: 6px !important;
+        padding: 6px 12px !important;
+    }
+
+    .dataTables_filter input::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    .dataTables_filter label {
+        color: #ffffff;
+        font-weight: 600;
+    }
+
+    .dt-buttons {
+        margin-bottom: 15px;
+    }
+
+    .dt-button {
+        background: rgba(91, 192, 190, 0.2) !important;
+        color: #5bc0be !important;
+        border: 1px solid rgba(91, 192, 190, 0.4) !important;
+        padding: 6px 12px !important;
+        border-radius: 6px !important;
+        font-size: clamp(12px, 2vw, 13px) !important;
+        margin-right: 6px !important;
+        transition: all 0.2s ease !important;
+    }
+
+    .dt-button:hover {
+        background: rgba(91, 192, 190, 0.3) !important;
+        box-shadow: 0 4px 12px rgba(91, 192, 190, 0.2) !important;
+    }
+
+    @media (max-width: 768px) {
+        .clients-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .add-client-btn {
+            margin-left: 0;
+            width: 100%;
+            justify-content: center;
+        }
+
+        #clientsTable {
+            font-size: 12px;
+        }
+
+        #clientsTable thead th,
+        #clientsTable tbody td {
+            padding: 8px;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .btn-small {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .clients-title {
+            font-size: 20px;
+        }
+
+        #clientsTable {
+            font-size: 11px;
+        }
+
+        #clientsTable thead th,
+        #clientsTable tbody td {
+            padding: 6px;
+        }
+
+        .badge-package,
+        .badge-status {
+            padding: 3px 6px;
+            font-size: 10px;
+        }
+
+        .btn-small {
+            padding: 8px 10px;
+            font-size: 12px;
+            min-width: 40px;
+            border-width: 2px;
+        }
+    }
+</style>
+
+<div class="container mt-5">
+    <!-- Header Section -->
+    <div class="clients-header">
+        <h2 class="clients-title">👥 Список клиентов</h2>
+        <a href="{% url 'add_client' %}" class="add-client-btn">
+            ➕ Добавить клиента
+        </a>
+    </div>
+    <div class="clients-subtitle">Экспортируйте таблицу или воспользуйтесь поиском, чтобы быстро найти клиента.</div>
+
+    <!-- Table Wrapper -->
+    <div class="table-wrapper">
+        <div class="table-responsive table-responsive-custom">
+        <table id="clientsTable" class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>👤 Логин</th>
+                    <th>🔑 Пароль</th>
+                    <th>� Телефон</th>                   
+                    <th>📦 Пакет</th>                    
+                    <th>📝 Примечание</th>
+                    <th>📅 Начало</th>
+                    <th>📅 Конец</th>
+                    <th>⏳ Остаток</th>
+                    <th>⚡ Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for client in clients %}
+                <tr>
+                    <td>
+                        <a href="{% url 'select_packages' %}?client={{ client.username }}" class="client-username-link">
+                            {{ client.username }}
+                        </a>
+                    </td>
+                    <td><code>{{ client.password }}</code></td>
+                    <td>{{ client.phone|default:"—" }}</td>
+                    <td>
+                        {% if client.subscription %}
+                            {% if "акцион" in client.subscription|lower %}
+                                <span class="badge-package badge-promo">🎁 {{ client.subscription }}</span>
+                            {% elif "iptv" in client.subscription|lower %}
+                                <span class="badge-package badge-iptv">📺 {{ client.subscription }}</span>
+                            {% else %}
+                                <span class="badge-package badge-default">📦 {{ client.subscription }}</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="badge-package badge-default">—</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ client.info|default:"—" }}</td>
+                    <td>{{ client.start_date|date:"d.m.Y" }}</td>
+                    <td>{{ client.end_date|date:"d.m.Y" }}</td>
+                    <td>
+                        {% if client.remaining_days is not None and client.remaining_days > 0 %}
+                            <span class="badge-status badge-active">✅ {{ client.remaining_days }}d</span>
+                        {% else %}
+                            <span class="badge-status badge-expired">❌ Истек</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="{% url 'edit_client' client.id %}" class="btn-small btn-edit" title="Редактировать">✏️</a>
+                            <a href="{% url 'select_packages' %}?client={{ client.username }}" class="btn-small btn-buy" title="Купить пакет">💳</a>
+                            <a href="{% url 'client_settings' client.id %}" class="btn-small btn-settings" title="Настройки">⚙️</a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <div class="empty-state-text">Нет клиентов</div>
+                            <p style="font-size: clamp(12px, 2vw, 13px); margin: 0;">
+                                <a href="{% url 'add_client' %}" style="color: #5bc0be; text-decoration: none;">
+                                    Добавьте первого клиента →
+                                </a>
+                            </p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- DataTables -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css">
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+
+<script>
+$(document).ready(function() {
+  if (!$.fn.DataTable.isDataTable('#clientsTable')) {
+    let table = $('#clientsTable').DataTable({
+      dom: 'Bfrtip',
+      buttons: [
+        { extend: 'excel', text: '📊 Excel' },
+        { extend: 'pdf', text: '📄 PDF' },
+        { extend: 'print', text: '🖨️ Печать' }
+      ],
+      language: {
+        url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/ru.json'
+      },
+      paging: false,
+      info: false,
+      lengthChange: false,
+      ordering: true,
+      searching: true,
+      order: [[4, 'asc']]
+    });
+  }
+});
+</script>
+{% endblock %}

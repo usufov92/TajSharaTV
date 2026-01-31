@@ -1,0 +1,576 @@
+{% extends "base.html" %}
+{% block title %}Выбор пакетов{% endblock %}
+
+{% block content %}
+<style>
+    .packages-container {
+        background: linear-gradient(135deg, rgba(30, 40, 60, 0.95) 0%, rgba(20, 30, 50, 0.98) 100%);
+        border: 1px solid rgba(91, 192, 190, 0.3);
+        border-radius: 12px;
+        padding: clamp(20px, 4vw, 32px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    .packages-title {
+        font-size: clamp(22px, 4vw, 28px);
+        font-weight: 700;
+        color: rgba(224, 224, 224, 0.95);
+        margin-bottom: 8px;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .packages-subtitle {
+        color: #ffffff;
+        font-size: clamp(13px, 2vw, 14px);
+        margin-bottom: 20px;
+        font-weight: 600;
+    }
+
+    .form-section {
+        background: rgba(11, 19, 43, 0.6);
+        border: 1px solid rgba(91, 192, 190, 0.3);
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .form-label {
+        font-weight: 700;
+        color: #ffffff;
+        margin-bottom: 8px;
+        font-size: clamp(13px, 2vw, 14px);
+    }
+
+    .form-control {
+        background: rgba(11, 19, 43, 0.8)!important;
+        border: 2px solid rgba(91, 192, 190, 0.3)!important;
+        color: #ffffff!important;
+        border-radius: 8px!important;
+        padding: 10px 14px!important;
+        font-size: clamp(13px, 2vw, 14px)!important;
+        transition: all 0.3s ease!important;
+        font-weight: 600!important;
+    }
+
+    .form-control:focus {
+        background: rgba(11, 19, 43, 0.9)!important;
+        border-color: #5bc0be!important;
+        box-shadow: 0 0 20px rgba(91, 192, 190, 0.3)!important;
+        outline: none!important;
+        color: #ffffff!important;
+    }
+
+    /* Для date input */
+    input[type="date"] {
+        color: #ffffff!important;
+        font-weight: 600!important;
+    }
+
+    input[type="date"]::-webkit-calendar-picker-indicator {
+        filter: invert(1) brightness(1.2);
+        cursor: pointer;
+    }
+
+    .form-select {
+        background: rgba(11, 19, 43, 0.8)!important;
+        border: 2px solid rgba(91, 192, 190, 0.3)!important;
+        color: #ffffff!important;
+        border-radius: 8px!important;
+        padding: 10px 14px!important;
+        font-weight: 600!important;
+    }
+
+    .form-select:focus {
+        border-color: #5bc0be!important;
+        box-shadow: 0 0 20px rgba(91, 192, 190, 0.3)!important;
+        color: #ffffff!important;
+    }
+
+    .form-select option {
+        background: #1a2638;
+        color: #ffffff;
+        font-weight: 600;
+    }
+
+    .packages-table-wrapper {
+        overflow-x: auto;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+
+    .packages-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: transparent;
+        font-size: clamp(12px, 2vw, 14px);
+    }
+
+    .packages-table thead {
+        background: linear-gradient(135deg, rgba(91, 192, 190, 0.35) 0%, rgba(91, 192, 190, 0.2) 100%);
+        border-bottom: 2px solid rgba(91, 192, 190, 0.6);
+    }
+
+    .packages-table thead th {
+        color: #ffffff;
+        font-weight: 700;
+        padding: clamp(12px, 2vw, 16px);
+        text-align: left;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    .packages-table tbody tr {
+        border-bottom: 1px solid rgba(91, 192, 190, 0.15);
+        transition: all 0.3s ease;
+    }
+
+    .packages-table tbody tr:hover {
+        background: rgba(91, 192, 190, 0.2)!important;
+        box-shadow: inset 0 0 0 1px rgba(91, 192, 190, 0.4);
+    }
+
+    .packages-table tbody td {
+        padding: clamp(10px, 2vw, 14px);
+        color: #ffffff;
+        vertical-align: middle;
+        background: rgba(20, 30, 50, 0.4);
+        font-weight: 600;
+    }
+
+    .checkbox-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .checkbox-wrapper input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        accent-color: #5bc0be;
+    }
+
+    .package-name {
+        color: #90caf9;
+        font-weight: 600;
+    }
+
+    .package-price {
+        color: #a5d6a7;
+        font-weight: 700;
+        font-size: clamp(13px, 2vw, 15px);
+    }
+
+    .badge {
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 700;
+        background: rgba(255, 193, 7, 0.3);
+        color: #ffd54f;
+        border: 1px solid rgba(255, 193, 7, 0.6);
+        margin-left: 8px;
+    }
+
+    .row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+    }
+
+    .col-md-4 {
+        grid-column: span 1;
+    }
+
+    .calculation-section {
+        background: rgba(11, 19, 43, 0.6);
+        border: 1px solid rgba(91, 192, 190, 0.3);
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .calculation-title {
+        font-size: clamp(16px, 2vw, 18px);
+        font-weight: 700;
+        color: #ffffff;
+        margin-bottom: 12px;
+    }
+
+    #priceBreakdown {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    #priceBreakdown li {
+        color: #ffffff;
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(91, 192, 190, 0.15);
+        font-size: clamp(12px, 2vw, 13px);
+        font-weight: 600;
+    }
+
+    #priceBreakdown li:last-child {
+        border-bottom: none;
+    }
+
+    .cost-summary {
+        background: rgba(91, 192, 190, 0.1);
+        border: 2px solid rgba(91, 192, 190, 0.3);
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+
+    .cost-line {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        font-size: clamp(13px, 2vw, 14px);
+        border-bottom: 1px solid rgba(91, 192, 190, 0.2);
+    }
+
+    .cost-line:last-child {
+        border-bottom: none;
+    }
+
+    .cost-label {
+        color: #ffffff;
+        font-weight: 700;
+    }
+
+    .cost-value {
+        color: #5bc0be;
+        font-weight: 700;
+        font-size: clamp(14px, 2vw, 16px);
+    }
+
+    .total-cost {
+        color: #a5d6a7;
+        font-size: clamp(15px, 2vw, 18px);
+    }
+
+    .balance-low {
+        color: #ef5350;
+    }
+
+    .action-buttons {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+
+    .btn {
+        padding: 12px 20px;
+        border: none;
+        border-radius: 8px;
+        font-size: clamp(13px, 2vw, 14px);
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #5bc0be 0%, #4a9b98 100%);
+        color: #fff;
+        box-shadow: 0 4px 15px rgba(91, 192, 190, 0.3);
+    }
+
+    .btn-success:hover {
+        background: linear-gradient(135deg, #6dd4d2 0%, #5baaa8 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(91, 192, 190, 0.4);
+    }
+
+    .btn-cancel {
+        background: rgba(91, 192, 190, 0.15);
+        color: #5bc0be;
+        border: 2px solid rgba(91, 192, 190, 0.4);
+    }
+
+    .btn-cancel:hover {
+        background: rgba(91, 192, 190, 0.25);
+        box-shadow: 0 4px 12px rgba(91, 192, 190, 0.2);
+    }
+
+    @media (max-width: 768px) {
+        .action-buttons {
+            grid-template-columns: 1fr;
+        }
+
+        .row {
+            grid-template-columns: 1fr;
+        }
+
+        .packages-table {
+            font-size: 12px;
+        }
+
+        .packages-table thead th,
+        .packages-table tbody td {
+            padding: 8px;
+        }
+    }
+</style>
+
+<div class="container mt-5">
+    <div class="packages-container">
+        <h2 class="packages-title">📦 Выбор пакетов для клиента</h2>
+        <p class="packages-subtitle">Выберите пакеты и установите период подписки</p>
+
+        <form method="post" id="packagesForm">
+            {% csrf_token %}
+
+            <!-- Информация о клиенте -->
+            <div class="form-section">
+                <div style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <label class="form-label">👤 Выберите клиента</label>
+                        <select name="username" id="clientSelect" class="form-select" required>
+                            <option value="">— Выберите клиента —</option>
+                            {% for client in clients %}
+                                <option value="{{ client.username }}" {% if client.username == prefill_username %}selected{% endif %}>
+                                    {{ client.full_name }} {{ client.username }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <!-- Кнопка для обновления списка пакетов из сайта дилера (только для IPTV) -->
+                    {% if settings.USE_DEALER_PACKAGES %}
+                    <form method="post" style="display: inline; margin-bottom: 0;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="refresh_packages">
+                        <input type="hidden" name="username" id="refreshUsername" value="">
+                        <button type="button" class="btn btn-cancel" id="refreshPackagesBtn" onclick="refreshPackagesList()" style="padding: 10px 14px; font-size: 13px; margin-bottom: 0;">
+                            🔄 Обновить список
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Таблица пакетов -->
+            <div class="packages-table-wrapper">
+                <table class="packages-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%;">✅</th>
+                            <th style="width: 70%;">📺 Пакет</th>
+                            <th style="width: 25%;">💰 Цена/мес.</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for package in packages %}
+                        <tr>
+                            <td>
+                                <div class="checkbox-wrapper">
+                                     <input type="checkbox"
+                                         name="selected_packages"
+                                         value="{{ package.name }}"
+                                         data-price="{{ package.price|floatformat:2 }}">
+                                </div>
+                            </td>
+                            <td>
+                                <span class="package-name">{{ package.name }}</span>
+                            </td>
+                            <td>
+                                <span class="package-price">${{ package.price }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Дата и период -->
+            <div class="form-section">
+                <div class="row">
+                    <div class="col-md-4">
+                        <label class="form-label">📅 Дата начала</label>
+                        <input type="date" name="start_date" id="startDate" class="form-control" readonly>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">📅 Дата окончания</label>
+                        <input type="date" name="end_date" id="endDate" class="form-control" readonly>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">📆 Выбрать период</label>
+                        <select id="periodSelect" class="form-select">
+                            <option value="">— Выберите период —</option>
+                            <option value="360">365 дней (1 год)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Расчёт стоимости -->
+            <div class="calculation-section">
+                <h5 class="calculation-title">📋 Расчёт стоимости:</h5>
+                <ul id="priceBreakdown"></ul>
+                <div id="discountInfo" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(91, 192, 190, 0.3); display: none;">
+                    <li style="color: #ffd54f; font-weight: 700; list-style: none;">
+                        🏷️ Скидка: -$<span id="discountAmount">0.00</span> (<span id="discountPercent">0</span>%)
+                    </li>
+                </div>
+            </div>
+
+            <!-- Сумма -->
+            <div class="cost-summary">
+                <div class="cost-line">
+                    <span class="cost-label">💳 Стоимость (до скидки):</span>
+                    <span class="cost-value">$<span id="subtotalCost">0.000</span></span>
+                </div>
+                <div class="cost-line" id="discountLine" style="display: none;">
+                    <span class="cost-label" style="color: #ffd54f;">💸 Эконом:</span>
+                    <span class="cost-value" style="color: #ffd54f;">-$<span id="discountCost">0.00</span></span>
+                </div>
+                <div class="cost-line" style="border-top: 2px solid rgba(91, 192, 190, 0.4); margin-top: 12px; padding-top: 12px;">
+                    <span class="cost-label" style="color: #a5d6a7; font-size: 16px;">💰 Итого к оплате:</span>
+                    <span class="cost-value total-cost" style="color: #a5d6a7; font-size: 18px;">$<span id="totalCost">0.000</span></span>
+                </div>
+                <div class="cost-line">
+                    <span class="cost-label">💳 Баланс менеджера:</span>
+                    <span class="cost-value {% if request.user.profile.balance < 0 %}balance-low{% endif %}">
+                        ${{ request.user.profile.balance|floatformat:2 }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Кнопки -->
+            <div class="action-buttons">
+                <button type="submit" class="btn btn-success">💳 Купить выбранные</button>
+                <a href="{% url 'clients_list' %}" class="btn btn-cancel">↩️ Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Ссылка на настройку USE_DEALER_PACKAGES
+const USE_DEALER_PACKAGES = {% if settings.USE_DEALER_PACKAGES %}true{% else %}false{% endif %};
+
+// Функция для обновления списка пакетов
+function refreshPackagesList() {
+    const username = document.getElementById('clientSelect').value;
+    if (!username) {
+        alert('Пожалуйста, выберите клиента');
+        return;
+    }
+    
+    if (!USE_DEALER_PACKAGES) {
+        alert('Функция обновления пакетов отключена');
+        return;
+    }
+    
+    // Заполняем скрытое поле и отправляем форму
+    document.getElementById('refreshUsername').value = username;
+    
+    // Находим форму с action=refresh_packages и отправляем её
+    const forms = document.querySelectorAll('form[method="post"]');
+    for (let form of forms) {
+        const actionInput = form.querySelector('input[name="action"]');
+        if (actionInput && actionInput.value === 'refresh_packages') {
+            form.submit();
+            break;
+        }
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  const checkboxes = document.querySelectorAll("input[name='selected_packages']");
+  const subtotalCostEl = document.getElementById("subtotalCost");
+  const discountCostEl = document.getElementById("discountCost");
+  const discountAmountEl = document.getElementById("discountAmount");
+  const discountPercentEl = document.getElementById("discountPercent");
+  const totalCostEl = document.getElementById("totalCost");
+  const discountLine = document.getElementById("discountLine");
+  const discountInfo = document.getElementById("discountInfo");
+  const startDateEl = document.getElementById("startDate");
+  const endDateEl = document.getElementById("endDate");
+  const periodSelect = document.getElementById("periodSelect");
+  const breakdownEl = document.getElementById("priceBreakdown");
+
+  const today = new Date().toISOString().split("T")[0];
+  startDateEl.value = today;
+
+  updateTotal();
+
+  // Скидка менеджера (автоматическая + ручная)
+  const managerDiscount = {{ request.user.profile.get_total_discount|safe }};
+  
+  function getDiscountPercent() {
+    return managerDiscount;
+  }
+
+  periodSelect.addEventListener("change", function() {
+    const days = parseInt(this.value);
+    if (!isNaN(days)) {
+      const start = new Date(startDateEl.value);
+      const end = new Date(start);
+      end.setDate(end.getDate() + days);
+      endDateEl.value = end.toISOString().split("T")[0];
+      updateTotal();
+    }
+  });
+
+  function updateTotal() {
+    const start = startDateEl.value;
+    const end = endDateEl.value;
+    if (!start || !end) return;
+
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    const days = Math.max(1, Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)));
+
+    let subtotal = 0;
+    breakdownEl.innerHTML = "";
+
+    checkboxes.forEach(cb => {
+      if (cb.checked) {
+        const name = cb.value;
+        let monthly = parseFloat((cb.dataset.price || "0").replace(',', '.'));
+        if (isNaN(monthly)) return;
+
+        const daily = monthly / 30;
+        const cost = daily * days;
+        subtotal += cost;
+
+        const item = document.createElement("li");
+        item.textContent = `${name}: ${monthly.toFixed(2)}$/мес × ${days} дней = ${cost.toFixed(2)}$`;
+        breakdownEl.appendChild(item);
+      }
+    });
+
+    // Вычисляем скидку (скидка менеджера)
+    const discountPercent = getDiscountPercent();
+    const discount = (subtotal * discountPercent) / 100;
+    const total = subtotal - discount;
+
+    // Обновляем UI
+    subtotalCostEl.textContent = subtotal.toFixed(3);
+    discountCostEl.textContent = discount.toFixed(2);
+    discountAmountEl.textContent = discount.toFixed(2);
+    discountPercentEl.textContent = discountPercent;
+    totalCostEl.textContent = total.toFixed(3);
+
+    // Показываем/скрываем скидку
+    if (discountPercent > 0) {
+      discountLine.style.display = "flex";
+      discountInfo.style.display = "block";
+    } else {
+      discountLine.style.display = "none";
+      discountInfo.style.display = "none";
+    }
+  }
+
+  checkboxes.forEach(cb => cb.addEventListener("change", updateTotal));
+  periodSelect.addEventListener("change", updateTotal);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Выход{% endblock %}
+{% block content %}
+<div class="container mt-5">
+  <div class="alert alert-success" role="alert">
+    <h4 class="alert-heading">✅ Вы вышли из системы</h4>
+    <p>Перенаправление на страницу входа через 3 секунды...</p>
+    <a href="{% url 'login' %}" class="btn btn-primary">Войти снова</a>
+  </div>
+</div>
+
+<script>
+  setTimeout(function() {
+    window.location.href = "{% url 'login' %}";
+  }, 3000);
+</script>
+{% endblock %}

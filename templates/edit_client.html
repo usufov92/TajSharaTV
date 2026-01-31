@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Редактировать клиента{% endblock %}
+
+{% block content %}
+<style>
+    .form-card { background: linear-gradient(135deg, rgba(91,192,190,0.1) 0%, rgba(28,37,65,0.85) 100%); border: 1px solid rgba(91,192,190,0.25); border-radius: 14px; padding: clamp(20px,4vw,32px); box-shadow: 0 8px 32px rgba(0,0,0,0.25); max-width: 600px; margin: 0 auto; }
+    .form-title { font-size: clamp(22px,4vw,28px); font-weight: 700; color: rgba(224,224,224,0.95); margin-bottom: 22px; }
+    .form-group { margin-bottom: 18px; }
+    .form-label { font-weight: 600; color: rgba(224,224,224,0.85); margin-bottom: 8px; font-size: clamp(13px,2vw,14px); }
+    .form-control { background: rgba(11,19,43,0.6)!important; border: 2px solid rgba(91,192,190,0.3)!important; color: #f0f0f0!important; border-radius: 8px!important; padding: 10px 14px!important; font-size: clamp(13px,2vw,14px)!important; transition: all 0.3s ease!important; }
+    .form-control:focus { background: rgba(11,19,43,0.8)!important; border-color: #5bc0be!important; box-shadow: 0 0 20px rgba(91,192,190,0.3)!important; }
+    .form-actions { display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap; }
+    .btn-submit { flex: 1; min-width: 120px; padding: 12px 20px; background: linear-gradient(135deg, #5bc0be 0%, #4a9b98 100%); border: none; border-radius: 8px; color: #fff; font-weight: 700; font-size: clamp(13px,2vw,14px); cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(91,192,190,0.3); }
+    .btn-submit:hover { background: linear-gradient(135deg, #6dd4d2 0%, #5baaa8 100%); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(91,192,190,0.4); }
+    .btn-cancel { flex: 1; min-width: 120px; padding: 12px 20px; background: rgba(91,192,190,0.15); border: 2px solid rgba(91,192,190,0.4); border-radius: 8px; color: #5bc0be; font-weight: 700; font-size: clamp(13px,2vw,14px); cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; transition: all 0.3s ease; }
+    .btn-cancel:hover { background: rgba(91,192,190,0.25); box-shadow: 0 4px 12px rgba(91,192,190,0.2); }
+    @media (max-width: 480px) { .form-card { padding: 16px; } .form-actions { flex-direction: column; } .btn-submit, .btn-cancel { width: 100%; } }
+</style>
+
+<div class="container mt-5">
+    <div class="form-card">
+        <h2 class="form-title">✏️ Редактировать клиента</h2>
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">👤 Логин</label>
+                <input type="text" name="username" value="{{ client.username }}" class="form-control">
+            </div>
+            <div class="form-group">
+                <label class="form-label">🔑 Пароль</label>
+                <input type="text" name="password" value="{{ client.password }}" class="form-control">
+            </div>
+            <div class="form-group">
+                <label class="form-label">📞 Телефон</label>
+                <input type="text" name="phone" value="{{ client.phone }}" class="form-control">
+            </div>
+            <div class="form-group">
+                <label class="form-label">ℹ️ Информация</label>
+                <textarea name="info" class="form-control" rows="3">{{ client.info }}</textarea>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn-submit">💾 Сохранить</button>
+                <a href="{% url 'clients_list' %}" class="btn-cancel">↩️ Назад</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

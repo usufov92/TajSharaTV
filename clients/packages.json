@@ -1,0 +1,177 @@
+[
+  {
+    "value": "52 градус",
+    "name": "52 градус",
+    "price": 0.25,
+    "price_per_month": 0.00833,
+    "image": "/img/52.png"
+  },
+  {
+    "value": "56 градус",
+    "name": "56 градус",
+    "price": 0.25,
+    "price_per_month": 0.00833,
+    "image": "/img/56.png"
+  },
+  {
+    "value": "iptv",
+    "name": "iptv",
+    "price": 0.20,
+    "price_per_month": 0.00667,
+    "image": "/img/iptv.png"
+  },
+  {
+    "value": "Акционный !! AlemTV",
+    "name": "Акционный !! AlemTV",
+    "price": 0.05,
+    "price_per_month": 0.00167,
+    "image": "/img/alemtv.png"
+  },
+  {
+    "value": "Акционный !! Antiksat 16Е | Skylink 23.5Е",
+    "name": "Акционный !! Antiksat 16Е | Skylink 23.5Е",
+    "price": 0.10,
+    "price_per_month": 0.00333,
+    "image": "/images/cz.png"
+  },
+  {
+    "value": "Акционный !! Focussat 0.8W | Freesat 16Е",
+    "name": "Акционный !! Focussat 0.8W | Freesat 16Е",
+    "price": 0.10,
+    "price_per_month": 0.00333,
+    "image": "/images/rumunia.jpg"
+  },
+  {
+    "value": "Акционный !! HD+ Германия 19E | ORF Австрия 19E",
+    "name": "Акционный !! HD+ Германия 19E | ORF Австрия 19E",
+    "price": 0.10,
+    "price_per_month": 0.00333,
+    "image": "/images/de.png"
+  },
+  {
+    "value": "Акционный !! Tivusat  | Sky IT Италия 13E",
+    "name": "Акционный !! Tivusat  | Sky IT Италия 13E",
+    "price": 0.07,
+    "price_per_month": 0.00250,
+    "image": "/images/it.jpg"
+  },
+  {
+    "value": "Акционный !! VIP 777 EU",
+    "name": "Акционный !! VIP 777 EU",
+    "price": 0.25,
+    "price_per_month": 0.00833,
+    "image": "/img/eu.jpg"
+  },
+  {
+    "value": "Акционный !! VIP BOCTOK",
+    "name": "Акционный !! VIP BOCTOK",
+    "price": 0.25,
+    "price_per_month": 0.00833,
+    "image": "/img/2222.jpg"
+  },
+  {
+    "value": "Акционный !! VIP BOCTOK (̶К̶л̶у̶б̶н̶и̶ч̶к̶а̶)",
+    "name": "Акционный !! VIP BOCTOK (̶К̶л̶у̶б̶н̶и̶ч̶к̶а̶)",
+    "price": 0.25,
+    "price_per_month": 0.00833,
+    "image": "/img/3333.jpg"
+  },
+  {
+    "value": "Акционный !! VIP plus",
+    "name": "Акционный !! VIP plus",
+    "price": 0.30,
+    "price_per_month": 0.01000,
+    "image": "/img/vip1.jpg"
+  },
+  {
+    "value": "Акционный !! VIP ZAPAD",
+    "name": "Акционный !! VIP ZAPAD",
+    "price": 0.25,
+    "price_per_month": 0.00833,
+    "image": "/img/vip-west.jpg"
+  },
+  {
+    "value": "Акционный !! Клубничка 13E",
+    "name": "Акционный !! Клубничка 13E",
+    "price": 0.07,
+    "price_per_month": 0.00250,
+    "image": "/img/xxx.png"
+  },
+  {
+    "value": "Акционный !! НТВ плюс 36+56",
+    "name": "Акционный !! НТВ плюс 36+56",
+    "price": 0.10,
+    "price_per_month": 0.00333,
+    "image": "/img/ntv.gif"
+  },
+  {
+    "value": "Акционный !! НТВ плюс | AlemTV",
+    "name": "Акционный !! НТВ плюс | AlemTV",
+    "price": 0.13,
+    "price_per_month": 0.00417,
+    "image": "/img/ntvtelekarta.gif"
+  },
+  {
+    "value": "Акционный !! НТВ плюс | Клубничка",
+    "name": "Акционный !! НТВ плюс | Клубничка",
+    "price": 0.13,
+    "price_per_month": 0.00417,
+    "image": "/img/ntvxxx.gif"
+  },
+  {
+    "value": "Акционный !! НТВ плюс | Телекарта",
+    "name": "Акционный !! НТВ плюс | Телекарта",
+    "price": 0.15,
+    "price_per_month": 0.00500,
+    "image": "/img/ntvtelekarta.gif"
+  },
+  {
+    "value": "Акционный !! НТВ плюс | Телекарта (̶К̶л̶у̶б̶н̶и̶ч̶к̶а̶)",
+    "name": "Акционный !! НТВ плюс | Телекарта (̶К̶л̶у̶б̶н̶и̶ч̶к̶а̶)",
+    "price": 0.15,
+    "price_per_month": 0.00500,
+    "image": "/img/ntvtelekarta.gif"
+  },
+  {
+    "value": "Акционный !! Телекарта",
+    "name": "Акционный !! Телекарта",
+    "price": 0.10,
+    "price_per_month": 0.00333,
+    "image": "/img/telekarta.jpg"
+  },
+  {
+    "value": "Акционный !! Телекарта (̶К̶л̶у̶б̶н̶и̶ч̶к̶а̶)",
+    "name": "Акционный !! Телекарта (̶К̶л̶у̶б̶н̶и̶ч̶к̶а̶)",
+    "price": 0.10,
+    "price_per_month": 0.00333,
+    "image": "/img/telekarta.jpg"
+  },
+  {
+    "value": "Акционный !! Телекарта | AlemTV",
+    "name": "Акционный !! Телекарта | AlemTV",
+    "price": 0.13,
+    "price_per_month": 0.00417,
+    "image": "/img/alemtv.png"
+  },
+  {
+    "value": "Акционный !! Телекарта | Клубничка",
+    "name": "Акционный !! Телекарта | Клубничка",
+    "price": 0.13,
+    "price_per_month": 0.00417,
+    "image": "/img/telekarta.jpg"
+  },
+  {
+    "value": "Акционный !! Телекарта | Радуга",
+    "name": "Акционный !! Телекарта | Радуга",
+    "price": 0.15,
+    "price_per_month": 0.00500,
+    "image": "/img/telekarta.jpg"
+  },
+  {
+    "value": "Телекарта",
+    "name": "Телекарта",
+    "price": 0.10,
+    "price_per_month": 0.00333,
+    "image": "/img/telekarta.jpg"
+  }
+]

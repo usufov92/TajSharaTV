@@ -1,0 +1,395 @@
+{% extends 'base.html' %}
+
+{% block title %}Главная{% endblock %}
+
+{% block content %}
+<style>
+    .balance-card {
+        background: linear-gradient(135deg, rgba(91, 192, 190, 0.15) 0%, rgba(28, 37, 65, 0.9) 100%);
+        border: 1px solid rgba(91, 192, 190, 0.3);
+        border-radius: 12px;
+        padding: clamp(20px, 4vw, 30px);
+        margin-bottom: 30px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
+    }
+
+    .balance-card:hover {
+        border-color: rgba(91, 192, 190, 0.6);
+        box-shadow: 0 12px 48px rgba(91, 192, 190, 0.2);
+        transform: translateY(-2px);
+    }
+
+    .balance-card h2 {
+        color: rgba(224, 224, 224, 0.8);
+        font-size: clamp(18px, 3vw, 24px);
+        margin-bottom: 15px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+
+    .balance-amount {
+        font-size: clamp(32px, 6vw, 48px);
+        color: #5bc0be;
+        font-weight: 700;
+        margin-bottom: 10px;
+        text-shadow: 0 2px 8px rgba(91, 192, 190, 0.3);
+    }
+
+    .balance-info {
+        font-size: clamp(13px, 2vw, 14px);
+        color: rgba(224, 224, 224, 0.6);
+        margin-bottom: 20px;
+    }
+
+    .balance-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .btn-modern {
+        flex: 1;
+        min-width: 120px;
+        padding: clamp(10px, 2vw, 14px) clamp(15px, 3vw, 25px);
+        border: none;
+        border-radius: 8px;
+        font-size: clamp(13px, 2vw, 14px);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        white-space: nowrap;
+        position: relative;
+        z-index: 10;
+        pointer-events: auto !important;
+    }
+
+    .btn-primary-modern {
+        background: linear-gradient(135deg, #5bc0be 0%, #4a9b98 100%);
+        color: #fff;
+    }
+
+    .btn-primary-modern:hover {
+        background: linear-gradient(135deg, #6dd4d2 0%, #5baaa8 100%);
+        box-shadow: 0 8px 24px rgba(91, 192, 190, 0.3);
+        transform: translateY(-2px);
+    }
+
+    .btn-secondary-modern {
+        background: rgba(91, 192, 190, 0.2);
+        color: #5bc0be;
+        border: 1.5px solid #5bc0be;
+    }
+
+    .btn-secondary-modern:hover {
+        background: rgba(91, 192, 190, 0.3);
+        box-shadow: 0 4px 12px rgba(91, 192, 190, 0.2);
+    }
+
+    .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: clamp(15px, 3vw, 25px);
+        margin-bottom: 30px;
+    }
+
+    .feature-card {
+        background: linear-gradient(135deg, rgba(91, 192, 190, 0.1) 0%, rgba(28, 37, 65, 0.85) 100%);
+        border: 1px solid rgba(91, 192, 190, 0.2);
+        border-radius: 12px;
+        padding: clamp(20px, 3vw, 25px);
+        transition: all 0.3s ease;
+        text-decoration: none;
+        color: inherit;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        cursor: pointer;
+    }
+
+    .feature-card:hover {
+        background: linear-gradient(135deg, rgba(91, 192, 190, 0.2) 0%, rgba(28, 37, 65, 0.95) 100%);
+        border-color: rgba(91, 192, 190, 0.5);
+        box-shadow: 0 12px 40px rgba(91, 192, 190, 0.15);
+        transform: translateY(-4px);
+    }
+
+    .feature-icon {
+        font-size: clamp(32px, 5vw, 48px);
+        margin-bottom: 12px;
+        display: inline-block;
+    }
+
+    .feature-title {
+        font-size: clamp(15px, 2.5vw, 18px);
+        font-weight: 600;
+        color: rgba(224, 224, 224, 0.9);
+        margin-bottom: 8px;
+    }
+
+    .feature-description {
+        font-size: clamp(12px, 2vw, 13px);
+        color: rgba(224, 224, 224, 0.6);
+    }
+
+    .alert-modern {
+        background: linear-gradient(135deg, rgba(220, 53, 69, 0.2) 0%, rgba(220, 53, 69, 0.1) 100%);
+        border: 1px solid rgba(220, 53, 69, 0.4);
+        border-radius: 12px;
+        padding: clamp(12px, 2vw, 16px);
+        margin-bottom: 20px;
+        font-size: clamp(13px, 2vw, 14px);
+        color: #ffb3ba;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .alert-icon {
+        font-size: clamp(18px, 3vw, 20px);
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: clamp(12px, 2vw, 16px);
+        margin-top: 20px;
+    }
+
+    .stat-box {
+        background: rgba(91, 192, 190, 0.1);
+        border: 1px solid rgba(91, 192, 190, 0.2);
+        border-radius: 8px;
+        padding: clamp(12px, 2vw, 16px);
+        text-align: center;
+    }
+
+    .stat-label {
+        font-size: clamp(11px, 1.5vw, 12px);
+        color: rgba(224, 224, 224, 0.6);
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .stat-value {
+        font-size: clamp(20px, 4vw, 28px);
+        color: #5bc0be;
+        font-weight: 700;
+    }
+
+    @media (max-width: 768px) {
+        .balance-buttons {
+            flex-direction: column;
+        }
+
+        .btn-modern {
+            width: 100%;
+        }
+
+        .feature-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .balance-card {
+            padding: 16px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .balance-card {
+            padding: 12px;
+            margin-bottom: 20px;
+        }
+
+        .balance-buttons {
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn-modern {
+            padding: 10px 12px;
+            font-size: 13px;
+        }
+
+        .feature-grid {
+            gap: 12px;
+        }
+
+        .feature-card {
+            padding: 16px;
+        }
+
+        .stats-container {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
+
+<div class="container mt-5">
+    <!-- Welcome Section with Balance -->
+    <div class="balance-card">
+        <h2>💰 Ваш баланс</h2>
+        <div class="balance-amount">
+            {% if user.profile.balance %}
+                {{ user.profile.balance|floatformat:2 }} $
+            {% else %}
+                0.00 $
+            {% endif %}
+        </div>
+        <div class="balance-info">
+            Ваш текущий баланс для управления сервисом
+        </div>
+        
+        <!-- Discount Badge -->
+        {% if user.profile.get_total_discount > 0 %}
+        <div style="background: linear-gradient(135deg, rgba(46, 213, 115, 0.2) 0%, rgba(46, 213, 115, 0.1) 100%); border: 2px solid #2ed573; border-radius: 12px; padding: 15px; margin: 15px 0; text-align: center;">
+            <div style="font-size: 14px; color: rgba(224, 224, 224, 0.8); margin-bottom: 5px;">🎁 Ваша индивидуальная скидка</div>
+            <div style="font-size: 36px; font-weight: 700; color: #2ed573;">{{ user.profile.get_total_discount|floatformat:0 }}%</div>
+            <div style="font-size: 12px; color: rgba(224, 224, 224, 0.6); margin-top: 5px;">
+                {{ user.profile.get_clients_count }} активных клиентов
+                {% if user.profile.manual_discount_percentage > 0 %}
+                <br><span style="color: #ffb800;">+ {{ user.profile.manual_discount_percentage|floatformat:0 }}% бонус от администратора</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Balance Actions -->
+        <div class="balance-buttons">
+            <a href="{% url 'topup_balance' %}" class="btn-modern btn-primary-modern">
+                ➕ Пополнить баланс
+            </a>
+            <a href="{% url 'balance_history' %}" class="btn-modern btn-secondary-modern">
+                📊 История транзакций
+            </a>
+            {% if peer_url %}
+            <a href="{{ peer_url }}" class="btn-modern btn-secondary-modern" target="_blank">
+                🌐 {{ peer_brand|default:"Taj-IPTV" }}
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Features Grid -->
+    <h3 style="font-size: clamp(18px, 3vw, 24px); color: rgba(224, 224, 224, 0.9); margin-bottom: 20px; font-weight: 600;">
+        🚀 Основные функции
+    </h3>
+
+    <div class="feature-grid">
+        <!-- Add Client -->
+        <a href="{% url 'add_client' %}" class="feature-card">
+            <div class="feature-icon">➕</div>
+            <div class="feature-title">Добавить клиента</div>
+            <div class="feature-description">Быстро добавьте нового клиента</div>
+        </a>
+
+        <!-- Clients List -->
+        <a href="{% url 'clients_list' %}" class="feature-card">
+            <div class="feature-icon">👥</div>
+            <div class="feature-title">Мои клиенты</div>
+            <div class="feature-description">Управляйте своих клиентов</div>
+        </a>
+
+        <!-- Select Packages -->
+        <a href="{% url 'select_packages' %}" class="feature-card">
+            <div class="feature-icon">📦</div>
+            <div class="feature-title">Пакеты</div>
+            <div class="feature-description">Доступные пакеты</div>
+        </a>
+
+        <!-- Profile -->
+        <a href="{% url 'client_manager_profile' %}" class="feature-card">
+            <div class="feature-icon">⚙️</div>
+            <div class="feature-title">Профиль</div>
+            <div class="feature-description">Управление профилем</div>
+        </a>
+
+        <!-- Analytics / History -->
+        {% if user.is_superuser %}
+        <a href="{% url 'admin:transaction-analytics' %}" class="feature-card">
+            <div class="feature-icon">📈</div>
+            <div class="feature-title">Аналитика</div>
+            <div class="feature-description">Статистика транзакций</div>
+        </a>
+        {% else %}
+        <a href="{% url 'balance_history' %}" class="feature-card">
+            <div class="feature-icon">📊</div>
+            <div class="feature-title">История</div>
+            <div class="feature-description">Просмотр операций</div>
+        </a>
+        {% endif %}
+
+        <!-- Logout -->
+        <a href="{% url 'logout' %}" class="feature-card" style="background: linear-gradient(135deg, rgba(220, 53, 69, 0.1) 0%, rgba(220, 53, 69, 0.05) 100%); border-color: rgba(220, 53, 69, 0.2);">
+            <div class="feature-icon">🚪</div>
+            <div class="feature-title">Выход</div>
+            <div class="feature-description">Выйти из системы</div>
+        </a>
+    </div>
+
+    <!-- Information Alert -->
+    {% if user.is_superuser %}
+    <div class="alert-modern">
+        <div class="alert-icon">👨‍💼</div>
+        <div>
+            <strong>Администратор:</strong> Вы можете управлять объявлениями через админ-панель.
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Active Clients Status -->
+    <div class="alert-modern" style="background: linear-gradient(135deg, rgba(91, 192, 190, 0.1) 0%, rgba(91, 192, 190, 0.05) 100%); border-color: rgba(91, 192, 190, 0.3); color: rgba(224, 224, 224, 0.85);">
+        <div class="alert-icon">ℹ️</div>
+        <div>
+            <strong>Совет:</strong> Регулярно проверяйте историю транзакций и статус своих клиентов.
+        </div>
+    </div>
+</div>
+
+<script>
+    // Обработчик кнопок баланса
+    document.querySelectorAll('.balance-buttons a').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            const href = this.getAttribute('href');
+            if (href) {
+                if (this.target === '_blank') {
+                    window.open(href, '_blank');
+                } else {
+                    window.location.href = href;
+                }
+            }
+        });
+    });
+
+    // Подавление ошибок от браузерных расширений
+    if (chrome && chrome.runtime) {
+        chrome.runtime.onMessage.addListener(() => {
+            return true;
+        });
+    }
+    
+    // Обработка runtime ошибок
+    if (typeof chrome !== 'undefined' && chrome.runtime) {
+        chrome.runtime.lastError;
+    }
+    
+    document.querySelectorAll('.feature-card').forEach(card => {
+        card.addEventListener('click', function(e) {
+            this.style.opacity = '0.9';
+            setTimeout(() => {
+                this.style.opacity = '1';
+            }, 100);
+        });
+    });
+</script>
+{% endblock %}
