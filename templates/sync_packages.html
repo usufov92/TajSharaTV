@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}Синхронизация пакетов{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>🔄 Синхронизация пакетов с дилера</h1>
+    
+    <div class="card">
+        <div class="card-body">
+            <p>Эта функция загружает все доступные пакеты с сайта дилера и обновляет базу данных.</p>
+            
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="username">Клиент для загрузки страницы пакетов:</label>
+                    <select name="username" id="username" class="form-control" required>
+                        <option value="demo">demo (по умолчанию)</option>
+                        {% for client in clients %}
+                        <option value="{{ client.username }}">{{ client.username }}</option>
+                        {% endfor %}
+                    </select>
+                    <small class="form-text text-muted">
+                        Выберите любого существующего клиента для загрузки страницы пакетов
+                    </small>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">
+                    🔄 Синхронизировать пакеты
+                </button>
+                <a href="{% url 'clients_list' %}" class="btn btn-secondary">
+                    ↩️ Отмена
+                </a>
+            </form>
+        </div>
+    </div>
+    
+    <div class="card mt-4">
+        <div class="card-body">
+            <h3>📋 Что будет сделано:</h3>
+            <ul>
+                <li>✅ Загрузка страницы пакетов с сайта дилера</li>
+                <li>✅ Парсинг всех доступных пакетов и их цен</li>
+                <li>✅ Создание новых пакетов в БД</li>
+                <li>✅ Обновление цен существующих пакетов</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -323,6 +323,7 @@
     <div class="packages-container">
         <h2 class="packages-title">📦 Выбор пакетов для клиента</h2>
         <p class="packages-subtitle">Выберите пакеты и установите период подписки</p>
+        <p class="packages-subtitle" style="color: #ef1212; font-weight: 800; margin-top: 18px;">⚠️ Платеж является окончательным: отмена подписки и возврат средств не предусмотрены условиями сервиса</p>
 
         <form method="post" id="packagesForm">
             {% csrf_token %}
@@ -361,8 +362,9 @@
                     <thead>
                         <tr>
                             <th style="width: 5%;">✅</th>
-                            <th style="width: 70%;">📺 Пакет</th>
-                            <th style="width: 25%;">💰 Цена/мес.</th>
+                            <th style="width: 50%;">📺 Пакет</th>
+                            <th style="width: 20%;">💰 Цена/мес.</th>
+                            <th style="width: 25%;">🏷️ Статус</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -381,6 +383,28 @@
                             </td>
                             <td>
                                 <span class="package-price">${{ package.price }}</span>
+                            </td>
+                            <td>
+                                {% if package.is_promo %}
+                                    {% if package.active_promo %}
+                                        <span style="background: linear-gradient(135deg, #ffd54f 0%, #ffb300 100%); color: #1e2832; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; display: inline-block;">
+                                            🔥 АКЦИЯ
+                                        </span>
+                                        {% if package.promo_end_date %}
+                                        <div style="color: #ffd54f; font-size: 11px; margin-top: 4px; font-weight: 600;">
+                                            До {{ package.promo_end_date|date:"d.m.Y" }}
+                                        </div>
+                                        {% endif %}
+                                    {% else %}
+                                        <span style="color: rgba(255, 255, 255, 0.4); font-size: 12px;">
+                                            ⏰ Акция завершена
+                                        </span>
+                                    {% endif %}
+                                {% else %}
+                                    <span style="color: rgba(255, 255, 255, 0.6); font-size: 12px;">
+                                        📦 Обычный
+                                    </span>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}
@@ -403,7 +427,9 @@
                         <label class="form-label">📆 Выбрать период</label>
                         <select id="periodSelect" class="form-select">
                             <option value="">— Выберите период —</option>
-                            <option value="360">365 дней (1 год)</option>
+                            <option value="30">30 дней (1 месяц)</option>
+                            <option value="180">180 дней (6 месяцев)</option>
+                            <option value="365">365 дней (1 год)</option>
                         </select>
                     </div>
                 </div>
@@ -496,11 +522,6 @@ document.addEventListener("DOMContentLoaded", function() {
   const periodSelect = document.getElementById("periodSelect");
   const breakdownEl = document.getElementById("priceBreakdown");
 
-  const today = new Date().toISOString().split("T")[0];
-  startDateEl.value = today;
-
-  updateTotal();
-
   // Скидка менеджера (автоматическая + ручная)
   const managerDiscount = {{ request.user.profile.get_total_discount|safe }};
   
@@ -508,25 +529,23 @@ document.addEventListener("DOMContentLoaded", function() {
     return managerDiscount;
   }
 
-  periodSelect.addEventListener("change", function() {
-    const days = parseInt(this.value);
-    if (!isNaN(days)) {
-      const start = new Date(startDateEl.value);
-      const end = new Date(start);
-      end.setDate(end.getDate() + days);
-      endDateEl.value = end.toISOString().split("T")[0];
-      updateTotal();
-    }
-  });
-
+  // Функция пересчёта стоимости (определена первой!)
   function updateTotal() {
     const start = startDateEl.value;
     const end = endDateEl.value;
     if (!start || !end) return;
 
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-    const days = Math.max(1, Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)));
+    // Вычисляем дни аналогично Python: (end - start).days
+    // Парсим даты вручную чтобы избежать проблем с часовыми поясами
+    const [startY, startM, startD] = start.split('-').map(Number);
+    const [endY, endM, endD] = end.split('-').map(Number);
+    
+    const startDate = new Date(startY, startM - 1, startD);
+    const endDate = new Date(endY, endM - 1, endD);
+    
+    // Вычисляем разницу в днях (аналогично Python .days)
+    const days = Math.round((endDate - startDate) / (1000 * 60 * 60 * 24));
+    const daysCount = Math.max(1, days);
 
     let subtotal = 0;
     breakdownEl.innerHTML = "";
@@ -538,11 +557,11 @@ document.addEventListener("DOMContentLoaded", function() {
         if (isNaN(monthly)) return;
 
         const daily = monthly / 30;
-        const cost = daily * days;
+        const cost = daily * daysCount;
         subtotal += cost;
 
         const item = document.createElement("li");
-        item.textContent = `${name}: ${monthly.toFixed(2)}$/мес × ${days} дней = ${cost.toFixed(2)}$`;
+        item.textContent = `${name}: ${monthly.toFixed(2)}$/мес × ${daysCount} дней = ${cost.toFixed(2)}$`;
         breakdownEl.appendChild(item);
       }
     });
@@ -569,8 +588,33 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   }
 
+  const today = new Date().toISOString().split("T")[0];
+  startDateEl.value = today;
+
+  // Автоматически выбираем период 365 дней при загрузке
+  periodSelect.value = "365";
+  const end = new Date();
+  end.setDate(end.getDate() + 365);
+  endDateEl.value = end.toISOString().split("T")[0];
+
+  // Первый расчёт при загрузке страницы
+  updateTotal();
+
+  periodSelect.addEventListener("change", function() {
+    const days = parseInt(this.value);
+    if (!isNaN(days)) {
+      const start = new Date(startDateEl.value);
+      const end = new Date(start);
+      end.setDate(end.getDate() + days);
+      endDateEl.value = end.toISOString().split("T")[0];
+      updateTotal();
+    }
+  });
+
+  // Добавляем слушатели на все контролы для пересчёта
   checkboxes.forEach(cb => cb.addEventListener("change", updateTotal));
-  periodSelect.addEventListener("change", updateTotal);
+  startDateEl.addEventListener("change", updateTotal);
+  endDateEl.addEventListener("change", updateTotal);
 });
 </script>
 {% endblock %}

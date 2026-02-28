@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.contrib.admin.models import LogEntry
+from django.db import transaction as db_transaction
 from django.db.models import Sum, Count
 from django.db.models.functions import TruncDate, TruncMonth
 from django.template.response import TemplateResponse
@@ -10,16 +11,16 @@ from django.conf import settings
 from pathlib import Path
 from datetime import datetime
 import os
-from .models import Client, Profile, Package, Transaction, TopupRequest, PaymentSettings, Announcement, SMSLog, SystemLog
+from .models import Client, Profile, Package, Transaction, TopupRequest, PaymentSettings, Announcement, SMSLog, SystemLog, PortInfo
 
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
-    list_display = ("user", "phone", "balance", "discount_info", "clients_count", "created_at")
+    list_display = ("user", "phone", "balance_display", "discount_info", "clients_count", "created_at", "topup_button")
     search_fields = ("user__username", "phone")
-    list_editable = ("balance",)
+    list_editable = ()  # Убираем редактирование баланса напрямую
     list_filter = ("created_at",)
-    readonly_fields = ("discount_percentage", "created_at", "updated_at", "clients_count_detail", "total_discount_display")
+    readonly_fields = ("discount_percentage", "created_at", "updated_at", "clients_count_detail", "total_discount_display", "balance")
     
     fieldsets = (
         ('Основная информация', {
@@ -38,6 +39,31 @@ class ProfileAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+    
+    def balance_display(self, obj):
+        """Красивое отображение баланса в списке"""
+        balance = obj.balance
+        if balance < 0:
+            color = '#ff4757'
+            icon = '⚠️'
+        elif balance < 10:
+            color = '#ffa502'
+            icon = '💰'
+        else:
+            color = '#2ed573'
+            icon = '💵'
+        return format_html(
+            '{} <span style="color: {}; font-weight: bold; font-size: 16px;">${}</span>',
+            icon, color, balance
+        )
+    balance_display.short_description = "Баланс"
+    
+    def topup_button(self, obj):
+        """Кнопка пополнения баланса в ячейке таблицы"""
+        url = f"javascript:topupModal.show({obj.id}, '{obj.user.username}', {obj.balance});"
+        html = f'<a href="{url}" style="background: linear-gradient(135deg, #5bc0be 0%, #4a9b98 100%); color: white; padding: 6px 12px; border-radius: 5px; display: inline-block; font-weight: 600; font-size: 12px; text-decoration: none;">💰 Пополнить</a>'
+        return format_html(html)
+    topup_button.short_description = "Действия"
     
     def discount_info(self, obj):
         """Показывает итоговую скидку в списке"""
@@ -106,7 +132,7 @@ class ProfileAdmin(admin.ModelAdmin):
         return format_html(html)
     clients_count_detail.short_description = "Детали по клиентам и скидкам"
     
-    actions = ['update_all_discounts', 'set_manual_discount']
+    actions = ['update_all_discounts', 'set_manual_discount', 'topup_balance_action']
     
     def update_all_discounts(self, request, queryset):
         updated = 0
@@ -127,6 +153,12 @@ class ProfileAdmin(admin.ModelAdmin):
         from django.shortcuts import redirect
         return redirect('admin:set_manager_discount')
     set_manual_discount.short_description = "🎁 Выдать ручную скидку"
+    
+    def topup_balance_action(self, request, queryset):
+        """Экшн для пополнения баланса менеджера"""
+        from django.shortcuts import redirect
+        return redirect('admin_topup_balance')
+    topup_balance_action.short_description = "💰 Пополнить баланс менеджера"
 
 
 @admin.register(Client)
@@ -140,8 +172,8 @@ class ClientAdmin(admin.ModelAdmin):
 
 @admin.register(Package)
 class PackageAdmin(admin.ModelAdmin):
-    list_display = ("name", "price", "is_promo", "promo_end_date", "active_promo", "created_at")
-    list_editable = ("price", "is_promo", "promo_end_date")
+    list_display = ("name", "port", "price", "is_promo", "promo_end_date", "active_promo", "created_at")
+    list_editable = ("port", "price", "is_promo", "promo_end_date")
     search_fields = ("name",)
     list_filter = ("is_promo", "created_at")
     readonly_fields = ("created_at", "updated_at")
@@ -272,12 +304,24 @@ class TopupRequestAdmin(admin.ModelAdmin):
         """Одобрить выбранные заявки"""
         approved_count = 0
         for topup in queryset.filter(status='pending'):
-            # Добавляем баланс менеджеру
+            if self._approve_topup_request(topup, request.user):
+                approved_count += 1
+        
+        self.message_user(request, f"Одобрено заявок: {approved_count}")
+    approve_requests.short_description = "✅ Одобрить выбранные заявки"
+
+    def _approve_topup_request(self, topup, admin_user):
+        """Единая логика одобрения заявки: баланс, транзакция, уведомление."""
+        with db_transaction.atomic():
+            # Избегаем двойного зачисления
+            if topup.status == TopupRequest.STATUS_APPROVED:
+                return False
+
             profile, _ = Profile.objects.get_or_create(user=topup.manager)
+            old_balance = profile.balance
             profile.balance += topup.amount_usd
-            profile.save()
-            
-            # Создаём транзакцию
+            profile.save(update_fields=['balance'])
+
             Transaction.objects.create(
                 manager=topup.manager,
                 client=None,
@@ -286,16 +330,43 @@ class TopupRequestAdmin(admin.ModelAdmin):
                 days_purchased=0,
                 comment=f"Пополнение на {topup.amount_tjs} TJS (курс {topup.exchange_rate})"
             )
-            
-            # Обновляем статус заявки
-            topup.status = 'approved'
-            topup.approved_by = request.user
+
+            topup.status = TopupRequest.STATUS_APPROVED
+            topup.approved_by = admin_user
             topup.processed_at = timezone.now()
-            topup.save()
-            approved_count += 1
-        
-        self.message_user(request, f"Одобрено заявок: {approved_count}")
-    approve_requests.short_description = "✅ Одобрить выбранные заявки"
+            topup.save(update_fields=['status', 'approved_by', 'processed_at'])
+
+        try:
+            from .telegram_notify import notify_topup_balance
+            notify_topup_balance(
+                manager_username=topup.manager.username,
+                amount=float(topup.amount_usd),
+                old_balance=float(old_balance),
+                new_balance=float(profile.balance)
+            )
+        except Exception:
+            pass
+
+        return True
+
+    def save_model(self, request, obj, form, change):
+        """Гарантирует корректную бизнес-логику при ручном изменении статуса заявки."""
+        previous_status = None
+        if change and obj.pk:
+            previous_status = TopupRequest.objects.filter(pk=obj.pk).values_list('status', flat=True).first()
+
+        # Если админ вручную меняет pending -> approved, применяем полную логику одобрения
+        if change and previous_status == TopupRequest.STATUS_PENDING and obj.status == TopupRequest.STATUS_APPROVED:
+            existing = TopupRequest.objects.get(pk=obj.pk)
+            self._approve_topup_request(existing, request.user)
+            return
+
+        # При ручном отклонении pending -> rejected фиксируем обработчика и время
+        if change and previous_status == TopupRequest.STATUS_PENDING and obj.status == TopupRequest.STATUS_REJECTED:
+            obj.approved_by = request.user
+            obj.processed_at = timezone.now()
+
+        super().save_model(request, obj, form, change)
     
     def reject_requests(self, request, queryset):
         """Отклонить выбранные заявки"""
@@ -464,3 +535,26 @@ class SystemLogAdmin(admin.ModelAdmin):
             "logs": logs_context,
         })
         return super().changelist_view(request, extra_context=extra_context)
+
+
+@admin.register(PortInfo)
+class PortInfoAdmin(admin.ModelAdmin):
+    list_display = ("package_name", "provider", "caid_provid", "camd", "cccam", "newcamd", "mgcamd")
+    list_editable = ("provider", "caid_provid", "camd", "cccam", "newcamd", "mgcamd")
+    search_fields = ("package_name", "provider", "caid_provid")
+    list_filter = ("provider", "created_at")
+    readonly_fields = ("created_at", "updated_at")
+    
+    fieldsets = (
+        ('Основная информация', {
+            'fields': ('package_name', 'provider', 'caid_provid')
+        }),
+        ('Порты протоколов', {
+            'fields': ('camd', 'cccam', 'newcamd', 'mgcamd'),
+            'description': 'Укажите порты для различных протоколов'
+        }),
+        ('Системная информация', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )

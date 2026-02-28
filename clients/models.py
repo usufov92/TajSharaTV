@@ -15,6 +15,13 @@ class Package(models.Model):
         decimal_places=2,
         validators=[MinValueValidator(Decimal('0.01'))]
     )
+    port = models.CharField(
+        "Порт",
+        max_length=50,
+        blank=True,
+        null=True,
+        help_text="Например: 8080"
+    )
     is_promo = models.BooleanField("Акционный", default=False)
     promo_end_date = models.DateField("Дата окончания акции", blank=True, null=True)
     created_at = models.DateTimeField("Дата создания", auto_now_add=True)
@@ -150,6 +157,18 @@ class Client(models.Model):
         (STATUS_PENDING, 'Ожидание'),
     ]
     
+    SYNC_PENDING = 'pending'
+    SYNC_IN_PROGRESS = 'in_progress'
+    SYNC_SUCCESS = 'success'
+    SYNC_FAILED = 'failed'
+    
+    SYNC_CHOICES = [
+        (SYNC_PENDING, 'Ожидает синхронизации'),
+        (SYNC_IN_PROGRESS, 'Синхронизация...'),
+        (SYNC_SUCCESS, 'Синхронизирован'),
+        (SYNC_FAILED, 'Ошибка синхронизации'),
+    ]
+    
     id = models.BigAutoField(primary_key=True)
     username = models.CharField("Логин", max_length=150, unique=True, db_index=True)
     password = models.CharField("Пароль", max_length=150)
@@ -159,6 +178,27 @@ class Client(models.Model):
     start_date = models.DateField("Дата начала", blank=True, null=True)
     end_date = models.DateField("Дата окончания", blank=True, null=True, db_index=True)
     info = models.TextField("Доп. информация", blank=True, null=True)
+    
+    # Статус синхронизации с сайтом дилера
+    dealer_sync_status = models.CharField(
+        "Статус синхронизации с дилером",
+        max_length=20,
+        choices=SYNC_CHOICES,
+        default=SYNC_PENDING,
+        help_text="Статус синхронизации клиента с сайтом дилера"
+    )
+    dealer_sync_message = models.TextField(
+        "Сообщение синхронизации",
+        blank=True,
+        null=True,
+        help_text="Детали синхронизации или ошибки"
+    )
+    dealer_synced_at = models.DateTimeField(
+        "Время синхронизации",
+        blank=True,
+        null=True,
+        help_text="Когда произошла последняя синхронизация"
+    )
 
     created_at = models.DateTimeField("Дата создания", auto_now_add=True)
     updated_at = models.DateTimeField("Дата обновления", auto_now=True)
@@ -511,3 +551,24 @@ class ClientPackageInfo(models.Model):
     
     def __str__(self):
         return f"Пакеты {self.client.username}"
+
+
+# Таблица портов (независимая от пакетов)
+class PortInfo(models.Model):
+    package_name = models.CharField("Название пакета", max_length=200)
+    provider = models.CharField("Провайдер", max_length=200, blank=True, null=True)
+    caid_provid = models.CharField("CAID:ProvID", max_length=100, blank=True, null=True, help_text="Например: 0500:050F00")
+    camd = models.CharField("camd", max_length=100, blank=True, null=True)
+    cccam = models.CharField("cccam", max_length=100, blank=True, null=True)
+    newcamd = models.CharField("newcamd", max_length=100, blank=True, null=True)
+    mgcamd = models.CharField("mgcamd", max_length=100, blank=True, null=True)
+    created_at = models.DateTimeField("Дата создания", auto_now_add=True)
+    updated_at = models.DateTimeField("Дата обновления", auto_now=True)
+    
+    class Meta:
+        verbose_name = "Информация о портах"
+        verbose_name_plural = "Таблица портов"
+        ordering = ['package_name']
+    
+    def __str__(self):
+        return f"{self.package_name} - {self.provider or 'Без провайдера'}"

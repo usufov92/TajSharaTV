@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест модального окна пополнения баланса</title>
+    <script src="/static/js/topup_modal.js"></script>
+</head>
+<body style="padding: 50px; font-family: Arial, sans-serif;">
+    <h1>Тест кнопки пополнения баланса</h1>
+    
+    <p>Текущий баланс: <strong>$45.25</strong></p>
+    
+    <button onclick="openTopupModal(1, 'adminsharatv', 45.25)" 
+            style="background: linear-gradient(135deg, #5bc0be 0%, #4a9b98 100%); 
+            color: white; padding: 10px 20px; border-radius: 5px; border: none;
+            font-weight: 600; font-size: 14px; cursor: pointer;">
+        💰 Пополнить баланс (ТЕСТ)
+    </button>
+    
+    <div style="margin-top: 30px; padding: 20px; background: #f0f0f0; border-radius: 5px;">
+        <h3>Инструкции:</h3>
+        <ol>
+            <li>Нажмите кнопку "💰 Пополнить баланс (ТЕСТ)"</li>
+            <li>Введите сумму (например, 100)</li>
+            <li>Введите комментарий (опционально)</li>
+            <li>Нажмите "Пополнить баланс"</li>
+            <li>Проверьте в консоли браузера (F12) есть ли ошибки</li>
+        </ol>
+        
+        <p><strong>Ожидаемое поведение:</strong></p>
+        <ul>
+            <li>Модальное окно должно открыться</li>
+            <li>При отправке формы должен быть AJAX запрос на <code>/tajsharatv/admin/topup-balance/</code></li>
+            <li>При успехе - сообщение "✅ Баланс успешно пополнен!" и перезагрузка страницы</li>
+            <li>При ошибке - соответствующее сообщение</li>
+        </ul>
+    </div>
+    
+    <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 5px;">
+        <strong>⚠️ Примечание:</strong> Эта страница для теста модального окна. В реальной админке кнопка будет в списке профилей.
+    </div>
+</body>
+</html>

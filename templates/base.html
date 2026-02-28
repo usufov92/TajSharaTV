@@ -368,6 +368,7 @@
           <li class="nav-item"><a class="nav-link" href="{% url 'add_client' %}">➕ Клиент</a></li>
           <li class="nav-item"><a class="nav-link" href="{% url 'clients_list' %}">📊 Клиенты</a></li>
           <li class="nav-item"><a class="nav-link" href="{% url 'select_packages' %}">📦 Пакеты</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'ports_table' %}">📋 Таблица портов</a></li>
           {% if peer_url %}
           <li class="nav-item"><a class="nav-link" href="{{ peer_url }}" target="_blank">🔀 {{ peer_brand|default:"Taj-IPTV" }}</a></li>
           {% endif %}
@@ -378,7 +379,7 @@
           </li>
           <li class="nav-item"><a class="nav-link" href="{% url 'client_manager_profile' %}">👤 {{ user.username|truncatechars:10 }}</a></li>
           {% if user.is_superuser %}
-          <li class="nav-item"><a class="nav-link" href="/admin/">⚙️ Админка</a></li>
+          <li class="nav-item"><a class="nav-link" href="{% url 'admin:index' %}">⚙️ Админка</a></li>
           {% endif %}
           <li class="nav-item"><a class="nav-link" href="{% url 'logout' %}">🚪 Выход</a></li>
           {% else %}

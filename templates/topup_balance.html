@@ -36,7 +36,11 @@
                                 <span class="currency-to">{{ exchange_rate|floatformat:4 }} TJS</span>
                             </div>
                             <small class="text-muted d-block mt-2">
-                                🕐 Обновлено: {{ now|date:"d.m.Y H:i" }}
+                                {% if exchange_rate_updated %}
+                                🕐 Обновлено: {{ exchange_rate_updated|date:"d.m.Y H:i" }}
+                                {% else %}
+                                ⚠️ Курс по умолчанию (не удалось получить актуальный)
+                                {% endif %}
                             </small>
                         </div>
                     </div>
@@ -66,7 +70,12 @@
                             <div class="detail-group">
                                 <span class="detail-label">Номер карты:</span>
                                 <span class="detail-value card-number" onclick="copyToClipboard('{{ method.card_number }}')">{{ method.card_number }}</span>
-                            </div>
+                            </div> 
+                            <a href="http://pay.expresspay.tj/?A=5058270374085750&s=&c=&f1=133&FIELD2=&FIELD3=" 
+                                target="_blank" 
+                                style="display:inline-block; width:100%; padding:15px 20px; background:#28a745; color:#fff; text-decoration:none; border-radius:5px; font-weight:600; font-size:16px; text-align:center; margin-top:10px; transition:all 0.3s ease; border:2px solid #28a745;">
+                                Пополнить баланс прямой ссылкой
+                            </a>
                         </div>
                         {% endfor %}
                     </div>
@@ -327,6 +336,14 @@
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 20px;
+    }
+    
+    /* Мобильная версия - вертикальное расположение */
+    @media (max-width: 768px) {
+        .detail-item.single-line {
+            grid-template-columns: 1fr;
+            gap: 30px;
+        }
     }
     
     .detail-group {

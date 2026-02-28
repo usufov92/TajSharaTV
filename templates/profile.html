@@ -243,7 +243,7 @@
             </div>
             <div class="info-item">
                 <div class="info-label">Баланс</div>
-                <div class="info-value">{{ user.profile.balance|floatformat:2 }} TJS</div>
+                <div class="info-value">{{ user.profile.balance|floatformat:2 }} $</div>
             </div>
             <div class="info-item">
                 <div class="info-label">Активных клиентов</div>
@@ -343,7 +343,10 @@
             <a href="{% url 'admin_topup_balance' %}" class="btn-action btn-admin-action">
                 💰 Пополнение (Все)
             </a>
-            <a href="/admin/" class="btn-action btn-admin-action">
+            <a href="{% url 'sync_packages_from_dealer' %}" class="btn-action btn-admin-action">
+                🔄 Синхронизация пакетов
+            </a>
+            <a href="{% url 'admin:index' %}" class="btn-action btn-admin-action">
                 🔧 Админ панель
             </a>
         </div>

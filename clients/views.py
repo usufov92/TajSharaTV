@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import logout as auth_logout
-from django.db import transaction as db_transaction
+from django.db import transaction as db_transaction, IntegrityError
 from django.db.utils import OperationalError
 from django.core.exceptions import ValidationError
 from django.conf import settings
@@ -12,18 +12,107 @@ from typing import List, Optional
 from urllib.parse import urljoin, urlparse, parse_qs
 import logging
 import re
+import threading
 
 import requests
 from bs4 import BeautifulSoup
 
 from .forms import ClientForm, ProfileForm, TopUpBalanceForm
 from .models import Client, Profile, Package, Transaction, IPTVInfo, ClientPackageInfo
-from .automation import auto_add_client_only, auto_buy_packages, check_client_exists_on_dealer
+from .automation import auto_add_client_only, auto_buy_packages, check_client_exists_on_dealer, log_info, log_error
 from .telegram_notify import notify_purchase, notify_error
 
 logger = logging.getLogger(__name__)
 
 IPTV_CHANNELS_DEFAULT = 1214
+
+
+def _add_client_background(client_data: dict, user_id: int):
+    """
+    🔄 Асинхронная синхронизация клиента с сайтом дилера.
+    Клиент уже существует в БД, синхронизируем его с дилером.
+    
+    Стратегия:
+    1. Сначала пробуем requests (быстрее, без браузера)
+    2. Если не сработает, пробуем Selenium
+    
+    Args:
+        client_data: {"username": str, "password": str, "subscription": str}
+        user_id: ID пользователя для логирования
+    """
+    from django.utils import timezone
+    from clients.automation import auto_add_client_requests, auto_add_client_only
+    
+    username = client_data['username']
+    
+    try:
+        logger.info(f"[SYNC] Начинаем синхронизацию клиента {username} с дилером...")
+        
+        # Обновляем статус: синхронизация началась
+        client = Client.objects.get(username=username)
+        client.dealer_sync_status = Client.SYNC_IN_PROGRESS
+        client.save(update_fields=['dealer_sync_status'])
+        
+        # Стратегия 1: Пробуем requests (быстрее и надёжнее)
+        logger.info(f"[SYNC] Пробуем метод 1: HTTP requests...")
+        result = auto_add_client_requests(
+            client_data['username'],
+            client_data['password'],
+            client_data.get('subscription', "Новый клиент")
+        )
+        
+        if not result["ok"]:
+            # Если requests не сработал, пробуем Selenium
+            logger.info(f"[SYNC] Метод 1 не сработал, пробуем метод 2: Selenium...")
+            result = auto_add_client_only(
+                client_data['username'],
+                client_data['password'],
+                client_data.get('subscription', "Новый клиент")
+            )
+        
+        logger.info(f"[SYNC] Результат синхронизации {username}: {result}")
+        
+        # Обновляем статус в зависимости от результата
+        if result["ok"]:
+            client.dealer_sync_status = Client.SYNC_SUCCESS
+            client.dealer_sync_message = result.get('message', 'Успешно синхронизирован')
+            client.dealer_synced_at = timezone.now()
+            logger.info(f"[SYNC] ✅ {username} успешно синхронизирован с дилером!")
+        else:
+            # Проверяем тип ошибки
+            error_message = result["message"].lower()
+            
+            if any(phrase in error_message for phrase in [
+                "пользователь с таким логином существует",
+                "пользователь уже существует",
+                "логин занят",
+                "уже зарегистрирован",
+                "уже существует"
+            ]):
+                # Клиент уже существует на дилере - это тоже успех
+                client.dealer_sync_status = Client.SYNC_SUCCESS
+                client.dealer_sync_message = "Клиент уже существует на дилере"
+                client.dealer_synced_at = timezone.now()
+                logger.info(f"[SYNC] ℹ️ {username} уже существует на дилере")
+            else:
+                # Другая ошибка
+                client.dealer_sync_status = Client.SYNC_FAILED
+                client.dealer_sync_message = result['message'][:500]  # Ограничиваем длину
+                logger.warning(f"[SYNC] ⚠️ Ошибка синхронизации {username}: {result['message']}")
+        
+        client.save(update_fields=['dealer_sync_status', 'dealer_sync_message', 'dealer_synced_at'])
+    
+    except Client.DoesNotExist:
+        logger.error(f"[SYNC] ❌ Клиент {username} не найден в БД для синхронизации")
+    except Exception as e:
+        logger.exception(f"[SYNC] ❌ Ошибка при синхронизации {username}: {e}")
+        try:
+            client = Client.objects.get(username=username)
+            client.dealer_sync_status = Client.SYNC_FAILED
+            client.dealer_sync_message = f"Ошибка: {str(e)[:500]}"
+            client.save(update_fields=['dealer_sync_status', 'dealer_sync_message'])
+        except:
+            pass
 
 
 def _first_link_matching(links: List[str], include_terms: List[str], exclude_terms: Optional[List[str]] = None):
@@ -184,15 +273,37 @@ def fetch_iptv_info(username: str) -> dict:
             from selenium.common.exceptions import TimeoutException
             from webdriver_manager.chrome import ChromeDriverManager
 
+            local_lib_dir = "/home/tajshara/tools/libs/libasound2/usr/lib/x86_64-linux-gnu"
+            if os.path.isdir(local_lib_dir):
+                os.environ["LD_LIBRARY_PATH"] = f"{local_lib_dir}:{os.environ.get('LD_LIBRARY_PATH', '')}".rstrip(":")
+
             options = Options()
-            options.add_argument("--headless")
+            cft_chrome = "/home/tajshara/tools/chrome-for-testing/chrome-linux64/chrome"
+            cft_driver = "/home/tajshara/tools/chrome-for-testing/chromedriver-linux64/chromedriver"
+
+            if os.path.exists(cft_chrome):
+                options.binary_location = cft_chrome
+            elif os.path.exists("/usr/bin/google-chrome"):
+                options.binary_location = "/usr/bin/google-chrome"
+            elif os.path.exists("/usr/bin/chromium-browser"):
+                options.binary_location = "/usr/bin/chromium-browser"
+            elif os.path.exists("/snap/chromium/current/usr/lib/chromium-browser/chrome"):
+                options.binary_location = "/snap/chromium/current/usr/lib/chromium-browser/chrome"
+
+            options.add_argument("--headless=new")
             options.add_argument("--no-sandbox")
             options.add_argument("--disable-dev-shm-usage")
             options.add_argument("--disable-gpu")
             options.add_argument("--window-size=1920,1080")
-            options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+            options.add_argument("--remote-debugging-port=9222")
+            options.add_argument("--user-data-dir=/tmp/chrome-profile")
+            options.add_argument("--disable-features=VizDisplayCompositor")
 
-            service = Service(ChromeDriverManager().install())
+            if os.path.exists(cft_driver):
+                service = Service(cft_driver)
+            else:
+                service = Service(ChromeDriverManager().install())
+
             driver = webdriver.Chrome(service=service, options=options)
             driver.set_page_load_timeout(40)
             try:
@@ -304,65 +415,89 @@ def home_view(request):
     # Добавляем объявления в контекст через процессор контекста
     return render(request, "home.html", context)
 
-# ➕ Добавление клиента
+# ➕ Добавление клиента (СТРОГО СИНХРОННО)
 @login_required
 @user_passes_test(is_client_manager)
 def add_client_view(request):
-    """Добавление нового клиента с автоматизацией через Selenium"""
+    """
+    Строгое добавление клиента:
+    1. Сначала добавляет клиента на сайте дилера
+    2. Только после успеха сохраняет в локальной БД
+    """
     if request.method == "POST":
         form = ClientForm(request.POST)
         if form.is_valid():
             try:
-                # Сначала добавляем на сайт дилера БЕЗ сохранения в нашей БД
-                result = auto_add_client_only(
-                    form.cleaned_data['username'], 
-                    form.cleaned_data['password'], 
-                    form.cleaned_data.get('subscription') or "Новый клиент"
-                )
+                from django.utils import timezone
+                from .automation import auto_add_client_requests
+
+                # Проверяем, существует ли клиент с таким логином в нашей базе
+                username = form.cleaned_data['username']
+                if Client.objects.filter(username=username).exists():
+                    messages.error(
+                        request,
+                        f"❌ Клиент с логином '{username}' уже существует в вашей базе данных. "
+                        f"Пожалуйста, используйте другой логин или отредактируйте существующего клиента."
+                    )
+                    logger.warning(f"Attempt to add duplicate client {username} by {request.user.username}")
+                    return render(request, "add_client.html", {"form": form})
                 
-                if result["ok"]:
-                    # ✅ Успешно добавлен на сайт дилера - сохраняем в нашей БД
-                    with db_transaction.atomic():
-                        client = form.save(commit=False)
-                        client.created_by = request.user
-                        client.save()
+                # ШАГ 1: ДОБАВЛЯЕМ НА САЙТ ДИЛЕРА
+                client_data = {
+                    "username": form.cleaned_data["username"],
+                    "password": form.cleaned_data["password"],
+                    "subscription": form.cleaned_data.get("subscription") or "Новый клиент",
+                }
+                dealer_result = auto_add_client_requests(
+                    client_data["username"],
+                    client_data["password"],
+                    client_data["subscription"],
+                )
+
+                if not dealer_result.get("ok"):
+                    logger.warning(
+                        f"Dealer HTTP sync failed for {username}: {dealer_result.get('message')}"
+                    )
+                    dealer_result = auto_add_client_only(
+                        client_data["username"],
+                        client_data["password"],
+                        client_data["subscription"],
+                    )
+
+                if not dealer_result.get("ok"):
+                    messages.error(request, f"❌ {dealer_result.get('message', 'Ошибка на сайте дилера')}")
+                    logger.warning(
+                        f"Dealer sync failed for {username}: {dealer_result.get('message')}"
+                    )
+                    return render(request, "add_client.html", {"form": form})
+
+                # ШАГ 2: СОХРАНЯЕМ В БД ТОЛЬКО ПОСЛЕ УСПЕХА НА ДИЛЕРЕ
+                with db_transaction.atomic():
+                    client = form.save(commit=False)
+                    client.created_by = request.user
+                    client.dealer_sync_status = Client.SYNC_SUCCESS
+                    client.dealer_sync_message = dealer_result.get("message", "Успешно добавлен на дилере")
+                    client.dealer_synced_at = timezone.now()
+                    client.save()
+
+                messages.success(
+                    request,
+                    f"✅ Клиент '{username}' добавлен на дилере и сохранен в системе."
+                )
+                logger.info(f"Client {username} added on dealer and saved locally")
+                return redirect("clients_list")
                     
-                    messages.success(request, f"✅ Клиент успешно добавлен: {result['message']}")
-                    logger.info(f"Client {form.cleaned_data['username']} added by {request.user.username}")
-                    return redirect("clients_list")
+            except IntegrityError as e:
+                if 'unique constraint' in str(e).lower() or 'username' in str(e).lower():
+                    messages.error(
+                        request,
+                        f"❌ Клиент с логином '{form.cleaned_data['username']}' уже существует. "
+                        f"Используйте другой логин."
+                    )
+                    logger.error(f"IntegrityError adding client {form.cleaned_data['username']}: {e}")
                 else:
-                    # ❌ Ошибка при добавлении на сайт дилера
-                    error_message = result["message"].lower()
-                    
-                    # Проверяем тип ошибки
-                    if any(phrase in error_message for phrase in [
-                        "пользователь с таким логином существует",
-                        "пользователь уже существует",
-                        "логин занят",
-                        "уже зарегистрирован",
-                        "уже создан не вами"
-                    ]):
-                        # Это ошибка о том что пользователь уже существует - НЕ сохраняем
-                        messages.error(
-                            request, 
-                            f"❌ Логин '{form.cleaned_data['username']}' уже зарегистрирован на сайте дилера. "
-                            f"Пожалуйста, используйте другой логин."
-                        )
-                        logger.warning(f"Client {form.cleaned_data['username']} already exists on dealer site")
-                    else:
-                        # Другие ошибки - сохраняем клиента и показываем предупреждение
-                        with db_transaction.atomic():
-                            client = form.save(commit=False)
-                            client.created_by = request.user
-                            client.save()
-                        
-                        messages.warning(
-                            request, 
-                            f"⚠️ Клиент сохранён в нашей системе, но на сайте дилера произошла ошибка: {result['message']}"
-                        )
-                        logger.warning(f"Partial success for {form.cleaned_data['username']}: {result['message']}")
-                        return redirect("clients_list")
-                    
+                    messages.error(request, f"❌ Ошибка базы данных: {str(e)}")
+                    logger.exception(f"Database error adding client: {e}")
             except ValidationError as e:
                 messages.error(request, f"❌ Ошибка валидации: {e}")
                 logger.error(f"Validation error adding client: {e}")
@@ -555,8 +690,11 @@ def topup_balance_view(request):
     payment_methods = list(payment_methods_qs)
     payment_settings = payment_methods[0] if payment_methods else None
     
-    # Получаем курс TJS к USD
+    # Получаем курс TJS к USD в реальном времени
+    from django.utils import timezone
     exchange_rate = Decimal('11.50')  # Курс по умолчанию
+    exchange_rate_updated = None
+    
     try:
         # API для получения курса валют
         response = requests.get('https://api.exchangerate-api.com/v4/latest/USD', timeout=5)
@@ -565,6 +703,8 @@ def topup_balance_view(request):
             # Получаем курс TJS к USD
             tjs_rate = data.get('rates', {}).get('TJS', 11.50)
             exchange_rate = Decimal(str(tjs_rate))
+            exchange_rate_updated = timezone.now()  # Время успешного обновления
+            logger.info(f"Exchange rate fetched successfully: 1 USD = {exchange_rate} TJS")
     except Exception as e:
         logger.warning(f"Could not fetch exchange rate: {e}")
     
@@ -626,6 +766,7 @@ def topup_balance_view(request):
         'payment_settings': payment_settings,
         'payment_methods': payment_methods,
         'exchange_rate': exchange_rate,
+        'exchange_rate_updated': exchange_rate_updated,
         'recent_requests': recent_requests,
     }
     return render(request, "topup_balance.html", context)
@@ -699,6 +840,10 @@ def select_packages_view(request):
             start_date_str = request.POST.get("start_date")
             end_date_str = request.POST.get("end_date")
 
+            # Логирование для отладки
+            debug_msg = f"DEBUG: POST форма получена - username='{username}', start_date='{start_date_str}', end_date='{end_date_str}', packages={selected}"
+            log_info(debug_msg)
+
             # Валидация данных
             if not username:
                 raise ValidationError("Введите логин клиента")
@@ -727,12 +872,6 @@ def select_packages_view(request):
                 raise ValidationError("Дата начала не может быть позже даты окончания")
             
             days = max(1, (end - start).days)
-
-            # Проверяем клиента на сайте дилера перед любыми списаниями
-            dealer_check = check_client_exists_on_dealer(username)
-            if not dealer_check.get("ok"):
-                messages.error(request, f"❌ Покупка остановлена: {dealer_check.get('message', 'Клиент не найден на сайте дилера')}")
-                return redirect("select_packages")
 
             # Расчёт стоимости по дням
             total_cost = Decimal("0.00")
@@ -765,7 +904,35 @@ def select_packages_view(request):
                 )
                 return redirect("select_packages")
 
-            # Выполнение транзакции
+            # 🤖 СТРОГИЙ СИНХРОННЫЙ РЕЖИМ: Сначала покупка на сайте дилера
+            log_info(f"[STRICT SYNC] Начинаем покупку на дилере для {client.username} на {days} дней")
+            # ✅ На дилер передаём ПРАВИЛЬНОЕ количество дней (30, 180 или 365)
+            # Дилер автоматически распределит подписку на этот период
+            auto_result = auto_buy_packages(
+                client.username,
+                package_names=selected_packages_list,
+                days=days  # 🔹 Передаём выбранное количество дней (30, 180 или 365)
+            )
+            
+            # Проверяем результат покупки на дилере
+            if not auto_result["ok"]:
+                # ❌ Покупка на дилере НЕ удалась - отменяем операцию
+                log_error(f"[STRICT SYNC] Покупка на дилере не удалась: {auto_result.get('message')}")
+                messages.error(
+                    request,
+                    f"❌ Покупка отменена. Ошибка на сайте дилера: {auto_result.get('message', 'Неизвестная ошибка')}"
+                )
+                # 📱 Отправить уведомление об ошибке
+                notify_error(
+                    error_title="Покупка пакетов не удалась",
+                    error_msg=f"Клиент: {client.username}, Ошибка: {auto_result.get('message', 'Неизвестная ошибка')}"
+                )
+                return redirect("select_packages")
+            
+            # ✅ Покупка на дилере успешна - сохраняем в нашу БД
+            log_info(f"[STRICT SYNC] Покупка на дилере успешна, сохраняем в БД")
+            
+            # Выполнение транзакции в нашей БД
             with db_transaction.atomic():
                 # Списываем деньги у менеджера
                 profile.balance -= total_cost
@@ -785,93 +952,48 @@ def select_packages_view(request):
                     total_cost=total_cost,
                     days_purchased=days
                 )
-
-            # 🤖 ЧАСТЬ 2: Автоматическое покупка пакетов на сайте дилера
-            auto_result = auto_buy_packages(
-                client.username,
-                package_names=selected_packages_list,
-                days=360  # Всегда используем 360 дней как основной период
-            )
             
-            if auto_result["ok"]:
-                iptv_info_created = False
-                if is_iptv_selected:
-                    try:
-                        ensure_iptv_info(client)
-                        iptv_info_created = True
-                    except Exception as e:
-                        logger.exception("Не удалось получить IPTV ссылки для %s", client.username)
-                        messages.warning(
-                            request,
-                            f"⚠️ Пакеты куплены, но получить IPTV ссылки не удалось: {e}"
-                        )
-
-                # 📦 📺 После успешной покупки сохраняем информацию о пакетах и IPTV
-                # (уже загружены в браузере в auto_buy_packages)
+            log_info(f"[STRICT SYNC] Транзакция сохранена в БД")
+            
+            # 📦 📺 Сохраняем IPTV информацию из результата auto_buy_packages
+            # (браузер и данные уже получены, дополнительные запусы браузера вызывают ошибки)
+            if auto_result.get("iptv_data"):
                 try:
-                    from .automation import fetch_client_packages_info
-                    packages_info = fetch_client_packages_info(client.username)
-                    if packages_info.get("ok") and packages_info.get("packages"):
-                        # Сохраняем информацию о пакетах
-                        package_info, _ = ClientPackageInfo.objects.get_or_create(client=client)
-                        package_info.packages_data = packages_info.get("packages", [])
-                        package_info.packages_html = packages_info.get("html", "")
-                        package_info.save()
-                        logger.info(f"Packages info updated for {client.username}")
+                    iptv_info, _ = IPTVInfo.objects.get_or_create(client=client)
+                    data = auto_result.get("iptv_data", {})
+                    iptv_info.standard_link = data.get("standard_link", "")
+                    iptv_info.short_link = data.get("short_link", "")
+                    iptv_info.m3u8_link = data.get("m3u8_link", "")
+                    iptv_info.m3u_link = data.get("m3u_link", "")
+                    iptv_info.spark_link = data.get("spark_link", "")
+                    if data.get("token"):
+                        iptv_info.token = data.get("token")
+                    if data.get("active_subscribers") is not None:
+                        iptv_info.active_subscribers = data.get("active_subscribers")
+                    if data.get("activated_per_day") is not None:
+                        iptv_info.activated_per_day = data.get("activated_per_day")
+                    if data.get("activated_per_week") is not None:
+                        iptv_info.activated_per_week = data.get("activated_per_week")
+                    if data.get("unused_funds") is not None:
+                        iptv_info.unused_funds = data.get("unused_funds")
+                    iptv_info.total_channels = data.get("total_channels", 0)
+                    iptv_info.save()
+                    logger.info(f"IPTV info updated for {client.username}")
                 except Exception as e:
-                    logger.warning(f"Failed to fetch packages info for {client.username}: {e}")
+                    logger.warning(f"Failed to save IPTV info for {client.username}: {e}")
 
-                # Сохраняем IPTV информацию из результата auto_buy_packages
-                if auto_result.get("iptv_data"):
-                    try:
-                        iptv_info, _ = IPTVInfo.objects.get_or_create(client=client)
-                        data = auto_result.get("iptv_data", {})
-                        iptv_info.standard_link = data.get("standard_link", "")
-                        iptv_info.short_link = data.get("short_link", "")
-                        iptv_info.m3u8_link = data.get("m3u8_link", "")
-                        iptv_info.m3u_link = data.get("m3u_link", "")
-                        iptv_info.spark_link = data.get("spark_link", "")
-                        if data.get("token"):
-                            iptv_info.token = data.get("token")
-                        if data.get("active_subscribers") is not None:
-                            iptv_info.active_subscribers = data.get("active_subscribers")
-                        if data.get("activated_per_day") is not None:
-                            iptv_info.activated_per_day = data.get("activated_per_day")
-                        if data.get("activated_per_week") is not None:
-                            iptv_info.activated_per_week = data.get("activated_per_week")
-                        if data.get("unused_funds") is not None:
-                            iptv_info.unused_funds = data.get("unused_funds")
-                        iptv_info.total_channels = data.get("total_channels", 0)
-                        iptv_info.save()
-                        logger.info(f"IPTV info updated for {client.username}")
-                    except Exception as e:
-                        logger.warning(f"Failed to save IPTV info for {client.username}: {e}")
+            # 📱 Отправить Telegram уведомление
+            notify_purchase(
+                username=client.username,
+                subscription=client.subscription,
+                cost=float(total_cost)
+            )
 
-                # 📱 Отправить Telegram уведомление
-                notify_purchase(
-                    username=client.username,
-                    subscription=client.subscription,
-                    cost=float(total_cost)
-                )
-
-                messages.success(
-                    request,
-                    f"✅ Куплены пакеты: {client.subscription} для {client.username} (клиент). "
-                    f"Списано {total_cost}$ с баланса."
-                )
-            else:
-                # 📱 Отправить уведомление об ошибке
-                notify_error(
-                    error_title="Автоматизация не удалась",
-                    error_msg=auto_result.get('message', 'Неизвестная ошибка')
-                )
-                
-                messages.warning(
-                    request,
-                    f"⚠️ Пакеты куплены на вашем сайте: {client.subscription} для {client.username} (клиент). "
-                    f"Списано {total_cost}$ с баланса. | "
-                    f"Но автоматизация на сайте дилера не удалась: {auto_result['message']}"
-                )
+            messages.success(
+                request,
+                f"✅ Куплены пакеты: {client.subscription} для {client.username}. "
+                f"Списано {total_cost}$ с баланса."
+            )
             
             logger.info(
                 f"Packages purchased by {request.user.username} "
@@ -899,18 +1021,63 @@ def select_packages_view(request):
 
 # 💰 Пополнение баланса менеджера (только для админов)
 @login_required
-@user_passes_test(lambda u: u.is_superuser, login_url='/admin/login/')
 def admin_topup_balance_view(request):
     """Пополнение баланса менеджера администратором"""
+    from django.http import JsonResponse
+    from decimal import Decimal, InvalidOperation
+    import json
+    
+    logger.info(f"admin_topup_balance_view called: method={request.method}, user={request.user.username}, path={request.path}")
+    
+    # Проверка прав доступа
+    if not request.user.is_superuser:
+        logger.warning(f"Access denied for user {request.user.username}: not superuser")
+        if request.method == "POST" and request.POST.get('profile_id'):
+            return JsonResponse({
+                'success': False,
+                'message': 'У вас нет прав для выполнения этой операции'
+            }, status=403)
+        else:
+            return redirect('admin:login')
+    
     if request.method == "POST":
-        form = TopUpBalanceForm(request.POST)
-        if form.is_valid():
+        # Проверяем, является ли это AJAX запросом
+        is_ajax = request.POST.get('profile_id') is not None or (
+            request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        )
+        
+        if is_ajax:
+            # Обработка AJAX запроса
             try:
-                with db_transaction.atomic():
-                    profile = form.cleaned_data['manager']
-                    amount = form.cleaned_data['amount']
-                    comment = form.cleaned_data.get('comment', '')
+                profile_id = request.POST.get('profile_id')
+                amount = request.POST.get('amount')
+                comment = request.POST.get('comment', '')
+                
+                logger.info(f"Topup request: profile_id={profile_id}, amount={amount}, user={request.user.username}")
+                
+                if not profile_id or not amount:
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Отсутствуют обязательные параметры'
+                    }, status=400)
+                
+                try:
+                    amount = Decimal(amount)
+                except (InvalidOperation, ValueError):
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Некорректная сумма'
+                    }, status=400)
                     
+                if amount <= 0:
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Сумма должна быть больше нуля'
+                    }, status=400)
+                
+                profile = Profile.objects.get(id=profile_id)
+                
+                with db_transaction.atomic():
                     # Пополняем баланс
                     old_balance = profile.balance
                     profile.balance += amount
@@ -919,22 +1086,18 @@ def admin_topup_balance_view(request):
                     # Создаём транзакцию пополнения
                     Transaction.objects.create(
                         manager=profile.user,
-                        client=None,  # Нет клиента для транзакций пополнения
+                        client=None,
                         packages=f"Пополнение баланса администратором {request.user.username}",
-                        total_cost=-amount,  # Отрицательная сумма = пополнение
+                        total_cost=-amount,
                         days_purchased=0,
                         comment=comment or "Пополнение баланса"
                     )
                     
-                    messages.success(
-                        request,
-                        f"✅ Баланс менеджера {profile.user.username} пополнен на {amount}$. "
-                        f"Было: {old_balance}$, стало: {profile.balance}$"
-                    )
                     logger.info(
                         f"Admin {request.user.username} topped up {profile.user.username} "
                         f"balance: +{amount}$ (comment: {comment})"
                     )
+                    
                     # Telegram уведомление админу
                     from .telegram_notify import notify_topup_balance
                     notify_topup_balance(
@@ -943,11 +1106,76 @@ def admin_topup_balance_view(request):
                         old_balance=float(old_balance),
                         new_balance=float(profile.balance)
                     )
-                    return redirect('admin_topup_balance')
                     
+                    return JsonResponse({
+                        'success': True,
+                        'message': f'Баланс пополнен на {amount}$',
+                        'new_balance': float(profile.balance)
+                    })
+                    
+            except Profile.DoesNotExist:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Профиль не найден'
+                }, status=404)
+            except ValueError:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Некорректная сумма'
+                }, status=400)
             except Exception as e:
-                messages.error(request, f"❌ Ошибка при пополнении баланса: {str(e)}")
                 logger.exception(f"Error in admin_topup_balance_view: {e}")
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Ошибка: {str(e)}'
+                }, status=500)
+        else:
+            # Обработка обычной формы
+            form = TopUpBalanceForm(request.POST)
+            if form.is_valid():
+                try:
+                    with db_transaction.atomic():
+                        profile = form.cleaned_data['manager']
+                        amount = form.cleaned_data['amount']
+                        comment = form.cleaned_data.get('comment', '')
+                        
+                        # Пополняем баланс
+                        old_balance = profile.balance
+                        profile.balance += amount
+                        profile.save()
+                        
+                        # Создаём транзакцию пополнения
+                        Transaction.objects.create(
+                            manager=profile.user,
+                            client=None,  # Нет клиента для транзакций пополнения
+                            packages=f"Пополнение баланса администратором {request.user.username}",
+                            total_cost=-amount,  # Отрицательная сумма = пополнение
+                            days_purchased=0,
+                            comment=comment or "Пополнение баланса"
+                        )
+                        
+                        messages.success(
+                            request,
+                            f"✅ Баланс менеджера {profile.user.username} пополнен на {amount}$. "
+                            f"Было: {old_balance}$, стало: {profile.balance}$"
+                        )
+                        logger.info(
+                            f"Admin {request.user.username} topped up {profile.user.username} "
+                            f"balance: +{amount}$ (comment: {comment})"
+                        )
+                        # Telegram уведомление админу
+                        from .telegram_notify import notify_topup_balance
+                        notify_topup_balance(
+                            manager_username=profile.user.username,
+                            amount=float(amount),
+                            old_balance=float(old_balance),
+                            new_balance=float(profile.balance)
+                        )
+                        return redirect('admin_topup_balance')
+                        
+                except Exception as e:
+                    messages.error(request, f"❌ Ошибка при пополнении баланса: {str(e)}")
+                    logger.exception(f"Error in admin_topup_balance_view: {e}")
     else:
         form = TopUpBalanceForm()
     
@@ -1007,3 +1235,50 @@ def admin_manage_discounts_view(request):
 
 def csrf_failure(request, reason=''):
     return render(request, 'csrf_failure.html', {'reason': reason}, status=403)
+
+
+# 🔄 Синхронизация пакетов с сайта дилера
+@login_required
+@user_passes_test(is_admin)
+def sync_packages_from_dealer_view(request):
+    """Синхронизация пакетов с сайта дилера в БД"""
+    if request.method == "POST":
+        username = request.POST.get('username', 'demo')
+        
+        # Импортируем функцию синхронизации
+        from django.core.management import call_command
+        from io import StringIO
+        
+        try:
+            # Вызываем команду синхронизации
+            out = StringIO()
+            call_command('sync_packages_from_dealer', '--username', username, stdout=out)
+            
+            # Парсим результат
+            output = out.getvalue()
+            
+            messages.success(request, f"✅ Синхронизация завершена для клиента {username}")
+            return redirect('clients_list')
+            
+        except Exception as e:
+            messages.error(request, f"❌ Ошибка синхронизации: {str(e)}")
+            logger.exception(f"Error in sync_packages_from_dealer_view: {e}")
+            return redirect('clients_list')
+    
+    # GET запрос - показываем форму
+    clients = Client.objects.all().order_by('username')
+    return render(request, 'sync_packages.html', {'clients': clients})
+
+
+@login_required
+def ports_table_view(request):
+    """📋 Таблица портов (независимая от пакетов)"""
+    from .models import PortInfo
+    
+    ports = PortInfo.objects.all().order_by('package_name')
+    
+    context = {
+        'ports': ports,
+    }
+    
+    return render(request, 'ports_table.html', context)

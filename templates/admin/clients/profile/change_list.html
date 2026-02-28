@@ -1,0 +1,154 @@
+{% extends "admin/change_list.html" %}
+
+{% block extrahead %}
+{{ block.super }}
+<script>
+// Правильный URL для пополнения баланса через Django URL reversal (с поддержкой FORCE_SCRIPT_NAME)
+const TOPUP_URL = "{% url 'admin_topup_balance' %}";
+console.log('Topup URL:', TOPUP_URL);
+
+// Модальное окно пополнения баланса (встроенное)
+(function() {
+    window.topupModal = {
+        show: function(profileId, username, balance) {
+            const existing = document.getElementById('topup-modal-overlay');
+            if (existing) existing.remove();
+            
+            const modalHTML = `
+            <div id="topup-modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 10000;">
+                <div style="background: white; border-radius: 8px; padding: 30px; max-width: 400px; width: 90%; box-shadow: 0 4px 30px rgba(0,0,0,0.3);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 style="margin: 0; color: #333; font-size: 20px;">💰 Пополнить баланс</h2>
+                        <button type="button" onclick="window.topupModal.close();" style="background: none; border: none; font-size: 28px; cursor: pointer; color: #999; padding: 0; width: 30px; height: 30px;">×</button>
+                    </div>
+                    <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                        <p style="margin: 0 0 10px 0; color: #666; font-size: 14px;"><strong>Менеджер:</strong> ${username}</p>
+                        <p style="margin: 0; color: #666; font-size: 14px;"><strong>Текущий баланс:</strong> <span style="color: #5bc0be; font-weight: bold; font-size: 16px;">$${parseFloat(balance).toFixed(2)}</span></p>
+                    </div>
+                    <form id="topup-form" onsubmit="return window.topupModal.submit(event, ${profileId});">
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 600; font-size: 14px;">Сумма пополнения ($)</label>
+                            <input type="number" id="topup-amount" step="0.01" min="0.01" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; box-sizing: border-box;" />
+                        </div>
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; margin-bottom: 8px; color: #333; font-weight: 600; font-size: 14px;">Комментарий</label>
+                            <textarea id="topup-comment" rows="3" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; box-sizing: border-box; resize: vertical;"></textarea>
+                        </div>
+                        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                            <button type="button" onclick="window.topupModal.close();" style="padding: 10px 20px; border: 1px solid #ddd; background: white; color: #666; border-radius: 5px; cursor: pointer; font-weight: 600;">Отмена</button>
+                            <button type="submit" id="topup-submit-btn" style="padding: 10px 20px; background: linear-gradient(135deg, #5bc0be 0%, #4a9b98 100%); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">Пополнить баланс</button>
+                        </div>
+                    </form>
+                </div>
+            </div>`;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            document.getElementById('topup-modal-overlay').addEventListener('click', (e) => {
+                if (e.target.id === 'topup-modal-overlay') this.close();
+            });
+            setTimeout(() => document.getElementById('topup-amount').focus(), 100);
+        },
+        
+        close: function() {
+            const modal = document.getElementById('topup-modal-overlay');
+            if (modal) modal.remove();
+        },
+        
+        submit: function(event, profileId) {
+            event.preventDefault();
+            const amount = document.getElementById('topup-amount').value;
+            const comment = document.getElementById('topup-comment').value;
+            const submitBtn = document.getElementById('topup-submit-btn');
+            
+            if (!amount || parseFloat(amount) <= 0) {
+                alert('Введите корректную сумму');
+                return false;
+            }
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Обработка...';
+            
+            const csrftoken = this.getCookie('csrftoken');
+            console.log('CSRF Token:', csrftoken ? 'Found' : 'NOT FOUND');
+            console.log('Profile ID:', profileId);
+            console.log('Amount:', amount);
+            
+            const formData = new FormData();
+            formData.append('profile_id', profileId);
+            formData.append('amount', amount);
+            formData.append('comment', comment);
+            
+            const headers = new Headers({
+                'X-CSRFToken': csrftoken,
+                'X-Requested-With': 'XMLHttpRequest'
+            });
+            
+            console.log('Sending request to:', TOPUP_URL);
+            
+            fetch(TOPUP_URL, {
+                method: 'POST',
+                headers: headers,
+                body: formData,
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status);
+                }
+                return response.text();
+            })
+            .then(text => {
+                console.log('Response text:', text.substring(0, 500));
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (e) {
+                    console.error('Response is not JSON:', text.substring(0, 500));
+                    throw new Error('Сервер вернул некорректный ответ.');
+                }
+                
+                if (data.success) {
+                    alert('✅ Баланс успешно пополнен на $' + amount);
+                    this.close();
+                    setTimeout(() => location.reload(), 500);
+                } else {
+                    alert('❌ Ошибка: ' + (data.message || 'Неизвестная ошибка'));
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Пополнить баланс';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('❌ Ошибка соединения: ' + error);
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Пополнить баланс';
+            });
+            
+            return false;
+        },
+        
+        getCookie: function(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            // Если csrftoken не в cookies, пытаемся получить из meta тега (Django setup)
+            if (!cookieValue) {
+                const meta = document.querySelector('[name=csrfmiddlewaretoken]');
+                if (meta) cookieValue = meta.getAttribute('content');
+            }
+            return cookieValue;
+        }
+    };
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}Таблица портов{% endblock %}
+
+{% block content %}
+<style>
+    .ports-header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 6px;
+        flex-wrap: wrap;
+    }
+
+    .ports-title {
+        font-size: clamp(20px, 4vw, 28px);
+        font-weight: 700;
+        color: rgba(224, 224, 224, 0.95);
+    }
+
+    .ports-subtitle {
+        width: 100%;
+        color: rgba(224, 224, 224, 0.7);
+        font-size: clamp(13px, 2vw, 14px);
+        margin-bottom: 18px;
+    }
+
+    .table-wrapper {
+        background: linear-gradient(135deg, rgba(30, 40, 60, 0.95) 0%, rgba(20, 30, 50, 0.98) 100%);
+        border: 1px solid rgba(91, 192, 190, 0.3);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    .table-responsive-custom {
+        overflow-x: auto;
+        border-radius: 12px;
+    }
+
+    #portsTable {
+        margin-bottom: 0;
+        font-size: clamp(12px, 2vw, 14px);
+        background: transparent;
+        width: 100%;
+    }
+
+    #portsTable thead {
+        background: linear-gradient(135deg, rgba(91, 192, 190, 0.3) 0%, rgba(91, 192, 190, 0.2) 100%);
+        border-bottom: 2px solid rgba(91, 192, 190, 0.5);
+    }
+
+    #portsTable thead th {
+        color: #ffffff;
+        font-weight: 700;
+        padding: clamp(12px, 2vw, 16px);
+        border: none;
+        white-space: nowrap;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    #portsTable tbody td {
+        color: #f0f0f0;
+        padding: clamp(10px, 2vw, 14px);
+        border-color: rgba(91, 192, 190, 0.15);
+        vertical-align: middle;
+        background: rgba(20, 30, 50, 0.4);
+    }
+
+    #portsTable tbody tr:hover {
+        background: rgba(91, 192, 190, 0.1);
+        transition: background 0.2s ease;
+    }
+
+    .badge-promo {
+        background: linear-gradient(135deg, #ffd54f 0%, #ffb300 100%);
+        color: #1e2832;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .price-tag {
+        color: #5bc0be;
+        font-weight: 700;
+        font-size: 16px;
+    }
+
+    .back-btn {
+        padding: clamp(8px, 2vw, 12px) clamp(12px, 2vw, 18px);
+        background: linear-gradient(135deg, rgba(91, 192, 190, 0.2) 0%, rgba(91, 192, 190, 0.1) 100%);
+        color: #5bc0be;
+        border: 1px solid rgba(91, 192, 190, 0.3);
+        border-radius: 8px;
+        font-size: clamp(13px, 2vw, 14px);
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 20px;
+    }
+
+    .back-btn:hover {
+        background: linear-gradient(135deg, rgba(91, 192, 190, 0.3) 0%, rgba(91, 192, 190, 0.2) 100%);
+        transform: translateX(-3px);
+        color: #6dd4d2;
+    }
+
+    .port-info {
+        color: #ffd54f;
+        font-weight: 600;
+        font-family: 'Courier New', monospace;
+    }
+</style>
+
+<div class="container mt-5">
+    <a href="{% url 'home' %}" class="back-btn">
+        ⬅️ Назад на главную
+    </a>
+
+    <div class="ports-header">
+        <h2 class="ports-title">📋 Таблица портов</h2>
+        <p class="ports-subtitle">Независимая таблица с информацией о портах пакетов и провайдерах</p>
+    </div>
+
+    <div class="table-wrapper">
+        <div class="table-responsive-custom">
+            <table class="table table-dark table-hover" id="portsTable">
+                <thead>
+                    <tr>
+                        <th>📦 Название пакета</th>
+                        <th>🌐 Провайдер</th>
+                        <th>🔑 CAID:ProvID</th>
+                        <th>🔌 camd</th>
+                        <th>🔌 cccam</th>
+                        <th>🔌 newcamd</th>
+                        <th>🔌 mgcamd</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if ports %}
+                        {% for port in ports %}
+                        <tr>
+                            <td>
+                                <strong>{{ port.package_name }}</strong>
+                            </td>
+                            <td>
+                                {% if port.provider %}
+                                    <span style="color: #5bc0be; font-weight: 600;">{{ port.provider }}</span>
+                                {% else %}
+                                    <span style="color: rgba(255, 255, 255, 0.3);">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="port-info">
+                                    {% if port.caid_provid %}
+                                        {{ port.caid_provid }}
+                                    {% else %}
+                                        <span style="color: rgba(255, 255, 255, 0.3);">—</span>
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="port-info">
+                                    {% if port.camd %}
+                                        {{ port.camd }}
+                                    {% else %}
+                                        <span style="color: rgba(255, 255, 255, 0.3);">—</span>
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="port-info">
+                                    {% if port.cccam %}
+                                        {{ port.cccam }}
+                                    {% else %}
+                                        <span style="color: rgba(255, 255, 255, 0.3);">—</span>
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="port-info">
+                                    {% if port.newcamd %}
+                                        {{ port.newcamd }}
+                                    {% else %}
+                                        <span style="color: rgba(255, 255, 255, 0.3);">—</span>
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="port-info">
+                                    {% if port.mgcamd %}
+                                        {{ port.mgcamd }}
+                                    {% else %}
+                                        <span style="color: rgba(255, 255, 255, 0.3);">—</span>
+                                    {% endif %}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.5);">
+                                📭 Нет данных о портах
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div style="margin-top: 30px; padding: 20px; background: rgba(91, 192, 190, 0.1); border-left: 4px solid #5bc0be; border-radius: 8px;">
+        <p style="color: rgba(255, 255, 255, 0.8); margin: 0;">
+            ℹ️ <strong>Информация:</strong> Это независимая таблица портов. Данные управляются отдельно от пакетов. 
+            {% if user.is_superuser %}
+            <br>Для добавления/редактирования информации о портах перейдите в <a href="{% url 'admin:clients_portinfo_changelist' %}" style="color: #5bc0be; font-weight: bold;">админ-панель → Таблица портов</a>.
+            {% endif %}
+        </p>
+    </div>
+</div>
+{% endblock %}
